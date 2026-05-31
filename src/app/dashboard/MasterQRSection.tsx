@@ -35,7 +35,7 @@ export default function MasterQRSection({ events }: { events: any[] }) {
         {selectedEvent && (
           <div className="flex flex-col items-center p-6 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
             <p className="text-sm font-bold text-zinc-500 uppercase tracking-wide mb-4">Total Scans: {selectedEvent.master_scan_count || 0}</p>
-            <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
+            <div className="bg-white p-4 rounded-xl shadow-sm mb-4 flex flex-col items-center">
               <QRCode
                 value={selectedEvent.master_qr_token}
                 size={200}
@@ -43,6 +43,7 @@ export default function MasterQRSection({ events }: { events: any[] }) {
                 fgColor={"#000000"}
                 level={"L"}
               />
+              <img src="/Marketneraxvicinix.png" alt="Logo" className="mt-4" style={{ width: 200, objectFit: 'contain' }} />
             </div>
             <p className="text-xs text-zinc-400 font-mono break-all text-center">
               Token: {selectedEvent.master_qr_token}

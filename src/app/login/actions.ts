@@ -1,43 +1,40 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
-export async function login(formData: FormData) {
+export async function login(email: string, password: string) {
   const supabase = await createClient()
 
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  }
-
-  const { error, data: authData } = await supabase.auth.signInWithPassword(data)
+  const { error, data: authData } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    redirect('/login?error=Could not authenticate user')
+    console.error('Login error:', error.message)
+    return { error: error.message }
   }
 
   const user = authData.user
 
   if (user) {
-    // Fetch the user role
-    const { data: roleData } = await supabase
+    // Use service role client to bypass RLS for role lookup
+    const adminClient = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data: roleData, error: roleError } = await adminClient
       .from('user_roles')
       .select('role')
       .eq('id', user.id)
       .single()
 
+    console.log('Role lookup:', roleData, roleError?.message)
     const role = roleData?.role || 'guard'
 
     revalidatePath('/', 'layout')
     
-    if (role === 'guard') {
-      redirect('/scan')
-    } else {
-      redirect('/dashboard')
-    }
+    return { success: true, role, redirectUrl: role === 'guard' ? '/scan' : '/dashboard' }
   }
 
-  redirect('/login?error=Unknown error')
+  return { error: 'Unknown error' }
 }

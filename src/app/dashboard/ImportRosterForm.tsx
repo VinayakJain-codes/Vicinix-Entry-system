@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { importRoster } from './importAction'
 
 type State = {
@@ -19,6 +20,14 @@ export default function ImportRosterForm() {
   const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
     return await importRoster(formData)
   }, initialState)
+
+  useEffect(() => {
+    if (state?.error) {
+      toast.error(state.error)
+    } else if (state?.imported !== undefined && state.imported > 0) {
+      toast.success(`Successfully imported ${state.imported} students. Skipped ${state.skipped} duplicates.`)
+    }
+  }, [state])
 
   return (
     <section className="bg-white dark:bg-black rounded-2xl shadow-xl w-full p-8 border border-zinc-200 dark:border-zinc-800">
@@ -64,17 +73,6 @@ export default function ImportRosterForm() {
         </button>
       </form>
 
-      {state?.error && (
-        <div className="mt-4 p-4 text-sm text-red-700 bg-red-100 rounded-md dark:bg-red-900/30 dark:text-red-400">
-          {state.error}
-        </div>
-      )}
-
-      {state?.imported !== undefined && state.imported > 0 && (
-        <div className="mt-4 p-4 text-sm text-green-700 bg-green-100 rounded-md dark:bg-green-900/30 dark:text-green-400">
-          Successfully imported {state.imported} students. Skipped {state.skipped} duplicates.
-        </div>
-      )}
     </section>
   )
 }

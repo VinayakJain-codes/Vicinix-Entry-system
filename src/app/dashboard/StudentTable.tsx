@@ -109,9 +109,14 @@ export default function StudentTable({ eventId }: { eventId: string }) {
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
             {loading ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-center">Loading...</td>
-              </tr>
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="px-4 py-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-1/2"></div></td>
+                  <td className="px-4 py-4"><div className="h-6 bg-zinc-200 dark:bg-zinc-700 rounded-full w-20"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-16"></div></td>
+                </tr>
+              ))
             ) : filteredStudents.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center">No students found.</td>

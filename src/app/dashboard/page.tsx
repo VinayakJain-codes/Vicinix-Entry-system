@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import ImportRosterForm from './ImportRosterForm'
 import GenerateQRsSection from './GenerateQRsSection'
 import BlastSection from './BlastSection'
@@ -13,7 +14,12 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: roleData } = await supabase.from('user_roles').select('role').eq('id', user.id).single()
+  // Use service role client to bypass RLS for role check
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { data: roleData } = await adminClient.from('user_roles').select('role').eq('id', user.id).single()
   if (!roleData || !['admin', 'super_admin'].includes(roleData.role)) {
     redirect('/login?error=Unauthorized')
   }

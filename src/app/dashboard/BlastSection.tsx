@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { blastWhatsAppForEvent } from './blastAction'
 
 export default function BlastSection({ events }: { events: any[] }) {
@@ -12,7 +13,6 @@ export default function BlastSection({ events }: { events: any[] }) {
   const handleBlast = async () => {
     if (!selectedEvent) return
     setIsProcessing(true)
-    setError(null)
     
     try {
       let currentRemaining = -1
@@ -20,7 +20,7 @@ export default function BlastSection({ events }: { events: any[] }) {
       while (currentRemaining !== 0) {
         const result = await blastWhatsAppForEvent(selectedEvent)
         if (result.error) {
-          setError(result.error)
+          toast.error(result.error)
           break
         }
         
@@ -32,8 +32,9 @@ export default function BlastSection({ events }: { events: any[] }) {
         
         currentRemaining = result.remaining || 0
       }
+      toast.success('WhatsApp blast completed.')
     } catch (e: any) {
-      setError(e.message)
+      toast.error(e.message)
     } finally {
       setIsProcessing(false)
     }
@@ -70,12 +71,6 @@ export default function BlastSection({ events }: { events: any[] }) {
         >
           {isProcessing ? 'Blasting...' : 'Blast QRs via WhatsApp'}
         </button>
-
-        {error && (
-          <div className="mt-4 p-4 text-sm text-red-700 bg-red-100 rounded-md dark:bg-red-900/30 dark:text-red-400">
-            {error}
-          </div>
-        )}
 
         {progress && (
           <div className="mt-4 p-4 text-sm text-green-700 bg-green-100 rounded-md dark:bg-green-900/30 dark:text-green-400">

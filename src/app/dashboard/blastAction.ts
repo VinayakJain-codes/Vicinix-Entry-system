@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -10,7 +11,8 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
   // Verify user is admin
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
-  const { data: roleData } = await supabase.from('user_roles').select('role').eq('id', user.id).single()
+  const adminClient = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const { data: roleData } = await adminClient.from('user_roles').select('role').eq('id', user.id).single()
   if (!roleData || !['admin', 'super_admin'].includes(roleData.role)) {
     return { error: 'Unauthorized role' }
   }

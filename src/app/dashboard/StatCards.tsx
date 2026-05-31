@@ -29,6 +29,22 @@ export default function StatCards({ eventId }: { eventId: string }) {
 
   if (!eventId) return null
 
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-8">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white dark:bg-zinc-800 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700 flex flex-col justify-between items-start h-32">
+            <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse"></div>
+            <div className="mt-4 h-10 w-16 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse"></div>
+            {i === 1 && (
+              <div className="mt-4 w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2 animate-pulse"></div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-8">
       {/* Headcount Card */}

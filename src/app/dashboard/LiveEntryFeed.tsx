@@ -8,6 +8,7 @@ type Student = Tables<'students'>
 
 export default function LiveEntryFeed({ eventId }: { eventId: string }) {
   const [entries, setEntries] = useState<Student[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!eventId) return
@@ -27,6 +28,7 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
       if (data) {
         setEntries(data as Student[])
       }
+      setLoading(false)
     }
 
     fetchRecentScans()
@@ -73,7 +75,20 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
       </h3>
       
       <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-        {entries.length === 0 ? (
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-zinc-800 animate-pulse">
+              <div className="flex flex-col space-y-2">
+                <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-32"></div>
+                <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-24"></div>
+              </div>
+              <div className="flex flex-col items-end space-y-2">
+                <div className="h-6 bg-zinc-200 dark:bg-zinc-700 rounded-md w-16"></div>
+                <div className="h-2 bg-zinc-200 dark:bg-zinc-700 rounded w-12"></div>
+              </div>
+            </div>
+          ))
+        ) : entries.length === 0 ? (
           <p className="text-sm text-zinc-500 italic mt-4 text-center">No recent entries</p>
         ) : (
           entries.map((student) => (
