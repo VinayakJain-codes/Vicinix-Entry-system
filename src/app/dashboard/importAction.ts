@@ -8,7 +8,7 @@ export async function importRoster(formData: FormData) {
   const eventName = formData.get('eventName') as string
 
   if (!file || !eventName) {
-    return { error: 'Missing file or event name.' }
+    return { imported: 0, skipped: 0, error: 'Missing file or event name.' }
   }
 
   const supabase = await createClient()
@@ -21,7 +21,7 @@ export async function importRoster(formData: FormData) {
     .single()
 
   if (eventError || !event) {
-    return { error: `Failed to create event: ${eventError?.message}` }
+    return { imported: 0, skipped: 0, error: `Failed to create event: ${eventError?.message}` }
   }
 
   // 2. Parse Excel
@@ -64,7 +64,7 @@ export async function importRoster(formData: FormData) {
   }
 
   if (studentsToInsert.length === 0) {
-    return { error: 'No valid rows found in the file.' }
+    return { imported: 0, skipped: 0, error: 'No valid rows found in the file.' }
   }
 
   // 4. Bulk Insert
@@ -73,10 +73,10 @@ export async function importRoster(formData: FormData) {
     .insert(studentsToInsert)
 
   if (insertError) {
-    return { error: `Failed to insert students: ${insertError.message}` }
+    return { imported: 0, skipped: 0, error: `Failed to insert students: ${insertError.message}` }
   }
 
   imported = studentsToInsert.length
 
-  return { imported, skipped }
+  return { imported, skipped, error: null }
 }

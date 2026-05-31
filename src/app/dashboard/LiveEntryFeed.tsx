@@ -25,7 +25,7 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
         .limit(50)
       
       if (data) {
-        setEntries(data)
+        setEntries(data as Student[])
       }
     }
 

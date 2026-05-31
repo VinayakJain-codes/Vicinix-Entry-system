@@ -3,10 +3,16 @@
 import { useActionState } from 'react'
 import { importRoster } from './importAction'
 
-const initialState = {
+type State = {
+  imported: number;
+  skipped: number;
+  error: string | null;
+}
+
+const initialState: State = {
   imported: 0,
   skipped: 0,
-  error: null as string | null,
+  error: null,
 }
 
 export default function ImportRosterForm() {
