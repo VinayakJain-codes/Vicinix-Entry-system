@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import ImportRosterForm from './ImportRosterForm'
 import GenerateQRsSection from './GenerateQRsSection'
 import BlastSection from './BlastSection'
+import MasterQRSection from './MasterQRSection'
 import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
@@ -27,10 +28,11 @@ export default async function DashboardPage() {
 
       <main className="flex flex-col items-center max-w-6xl mx-auto w-full space-y-8">
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
           <ImportRosterForm />
           <GenerateQRsSection events={events || []} />
           <BlastSection events={events || []} />
+          <MasterQRSection events={events || []} />
         </div>
 
       </main>

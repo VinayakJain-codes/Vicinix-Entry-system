@@ -34,7 +34,20 @@ export async function POST(request: Request) {
     .single()
 
   if (findError || !student) {
-    return NextResponse.json({ error: 'Invalid Token' }, { status: 404 })
+    // Before failing, check if it's a master token
+    const { data: event, error: eventError } = await supabaseAdmin
+      .from('events')
+      .select('*')
+      .eq('master_qr_token', token)
+      .single()
+
+    if (eventError || !event) {
+      return NextResponse.json({ error: 'Invalid Token' }, { status: 404 })
+    }
+
+    // It's a master token!
+    await supabaseAdmin.rpc('increment_master_scan', { event_uuid: event.id })
+    return NextResponse.json({ success: true, isMaster: true, event }, { status: 200 })
   }
 
   if (student.qr_status === 'scanned') {
@@ -55,5 +68,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Already Scanned', student }, { status: 400 })
   }
 
-  return NextResponse.json({ success: true, student: updatedStudent }, { status: 200 })
+  return NextResponse.json({ success: true, isMaster: false, student: updatedStudent }, { status: 200 })
 }
