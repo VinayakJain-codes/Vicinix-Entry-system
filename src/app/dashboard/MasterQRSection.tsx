@@ -1,12 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import QRCode from 'react-qr-code'
+import { createClient } from '@/utils/supabase/client'
 
 export default function MasterQRSection({ events }: { events: any[] }) {
   const [selectedEventId, setSelectedEventId] = useState('')
+  const [liveCounts, setLiveCounts] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel('master_qr_updates')
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'events'
+      }, (payload) => {
+        setLiveCounts(prev => ({
+          ...prev,
+          [payload.new.id]: payload.new.master_scan_count
+        }))
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   const selectedEvent = events.find(e => e.id === selectedEventId)
+  
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const scanUrl = selectedEvent ? `${origin}/scan?token=${selectedEvent.master_qr_token}` : ''
+  const currentCount = selectedEvent ? (liveCounts[selectedEvent.id] ?? (selectedEvent.master_scan_count || 0)) : 0
 
   return (
     <section className="bg-white dark:bg-black rounded-2xl shadow-xl w-full p-8 border border-zinc-200 dark:border-zinc-800">
@@ -34,10 +59,10 @@ export default function MasterQRSection({ events }: { events: any[] }) {
 
         {selectedEvent && (
           <div className="flex flex-col items-center p-6 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
-            <p className="text-sm font-bold text-zinc-500 uppercase tracking-wide mb-4">Total Scans: {selectedEvent.master_scan_count || 0}</p>
+            <p className="text-sm font-bold text-zinc-500 uppercase tracking-wide mb-4">Total Scans: {currentCount}</p>
             <div className="bg-white p-4 rounded-xl shadow-sm mb-4 flex flex-col items-center">
               <QRCode
-                value={selectedEvent.master_qr_token}
+                value={scanUrl}
                 size={200}
                 bgColor={"#ffffff"}
                 fgColor={"#000000"}

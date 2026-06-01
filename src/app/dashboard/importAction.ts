@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 export async function importRoster(formData: FormData) {
   const file = formData.get('roster') as File
   const eventName = formData.get('eventName') as string
+  const eventDate = formData.get('eventDate') as string | null
 
   if (!file || !eventName) {
     return { imported: 0, skipped: 0, error: 'Missing file or event name.' }
@@ -16,7 +17,7 @@ export async function importRoster(formData: FormData) {
   // 1. Create Event
   const { data: event, error: eventError } = await supabase
     .from('events')
-    .insert([{ name: eventName }])
+    .insert([{ name: eventName, date: eventDate || null }])
     .select()
     .single()
 
@@ -31,6 +32,21 @@ export async function importRoster(formData: FormData) {
   const worksheet = workbook.Sheets[firstSheetName]
   const json: any[] = xlsx.utils.sheet_to_json(worksheet, { header: 1 })
 
+  if (json.length === 0) {
+    return { imported: 0, skipped: 0, error: 'The file is empty.' }
+  }
+
+  // Smart header detection
+  const headers = (json[0] as any[]).map(h => String(h || '').toLowerCase().trim())
+  const detectedNameIdx = headers.findIndex(h => h.includes('name'))
+  const detectedPhoneIdx = headers.findIndex(h => h.includes('phone') || h.includes('whatsapp') || h.includes('mobile'))
+  const sidIdx = headers.findIndex(h => h.includes('student') && h.includes('id'))
+  const enrollIdx = headers.findIndex(h => h.includes('enroll'))
+  const emailIdx = headers.findIndex(h => h.includes('email'))
+
+  const nameIdx = detectedNameIdx >= 0 ? detectedNameIdx : 0
+  const phoneIdx = detectedPhoneIdx >= 0 ? detectedPhoneIdx : 1
+
   // 3. Process & Deduplicate
   const studentsToInsert = []
   const seenPhones = new Set()
@@ -40,8 +56,10 @@ export async function importRoster(formData: FormData) {
 
   for (let i = 1; i < json.length; i++) {
     const row = json[i]
-    const name = row[0]
-    let rawPhone = row[1]
+    if (!row) continue
+
+    const name = row[nameIdx]
+    let rawPhone = row[phoneIdx]
 
     if (!name || !rawPhone) {
       continue
@@ -56,10 +74,17 @@ export async function importRoster(formData: FormData) {
     }
     seenPhones.add(phone)
 
+    const studentId = sidIdx >= 0 && row[sidIdx] ? String(row[sidIdx]).trim() : null
+    const enrollmentNo = enrollIdx >= 0 && row[enrollIdx] ? String(row[enrollIdx]).trim() : null
+    const email = emailIdx >= 0 && row[emailIdx] ? String(row[emailIdx]).trim() : null
+
     studentsToInsert.push({
       event_id: event.id,
-      name: String(name),
+      name: String(name).trim(),
       phone_number: phone,
+      student_id: studentId,
+      enrollment_no: enrollmentNo,
+      email: email,
     })
   }
 

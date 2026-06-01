@@ -1,35 +1,42 @@
 import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center min-h-screen bg-zinc-50 font-sans dark:bg-zinc-900 p-4 relative overflow-hidden">
+    <div className="flex flex-col flex-1 items-center justify-center min-h-screen relative overflow-hidden">
+      {/* Cinematic faint grid pattern overlay */}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-10"></div>
       
-      {/* Background decoration for premium feel */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-green-500/10 dark:bg-green-500/5 rounded-full blur-3xl -z-10"></div>
-      
-      <main className="flex flex-col items-center justify-center text-center p-10 sm:p-12 bg-white dark:bg-black rounded-[2rem] shadow-2xl shadow-zinc-200/50 dark:shadow-black/50 max-w-lg w-full border border-zinc-100 dark:border-zinc-800 z-10 relative">
+      {/* Subtle green gradient radial */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#13EC5B]/10 rounded-full blur-[100px] -z-10 animate-pulse" style={{ animationDuration: '4s' }}></div>
+
+      <main className="flex flex-col items-center justify-center text-center p-10 sm:p-12 z-10 w-full max-w-md">
         
-        {/* Marketneraxvicinix Logo */}
-        <img src="/Marketneraxvicinix.png" alt="Marketnera x Vicinix" className="w-64 object-contain mb-8 p-4 bg-black rounded-xl" style={{ minHeight: '80px' }} />
+        {/* Animated green pulsing circle behind logo */}
+        <div className="relative mb-12 flex justify-center items-center">
+          <div className="absolute w-32 h-32 bg-[#13EC5B]/20 blur-2xl rounded-full animate-pulse"></div>
+          <img src="/Marketneraxvicinix.png" alt="Marketnera x Vicinix" className="w-64 object-contain relative z-10" />
+        </div>
         
-        <h1 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 mb-4">
-          Marketnera Entry
+        <h1 className="text-5xl font-black tracking-tight mb-4 uppercase">
+          Marketnera
         </h1>
         
-        <p className="text-lg text-zinc-500 dark:text-zinc-400 mb-10 max-w-sm leading-relaxed">
-          Real-time, fraud-resistant digital entry validation.
+        <p className="text-lg text-[var(--color-muted)] mb-12 max-w-sm leading-relaxed font-medium">
+          Event Entry System
         </p>
         
         <Link 
           href="/login" 
-          className="w-full flex justify-center items-center py-4 px-4 rounded-xl text-base font-bold text-white bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:text-white dark:hover:bg-green-500 transition-all shadow-lg active:scale-[0.98]"
+          className="w-full flex justify-between items-center py-4 px-6 rounded-xl text-lg font-bold text-black bg-[var(--color-marketnera)] hover:bg-[var(--color-marketnera-dark)] transition-all shadow-[0_0_20px_rgba(19,236,91,0.2)] hover:shadow-[0_0_30px_rgba(19,236,91,0.4)] active:scale-[0.98]"
         >
-          Sign In to Dashboard
+          <span>Sign In</span>
+          <ArrowRight className="w-5 h-5" />
         </Link>
         
         {/* Footer Branding */}
-        <div className="mt-10 pt-6 border-t border-zinc-100 dark:border-zinc-800 w-full">
-          <p className="text-[11px] font-bold tracking-[0.2em] text-zinc-400 dark:text-zinc-500 uppercase">
+        <div className="mt-16 pt-8 w-full">
+          <p className="text-[10px] font-bold tracking-[0.2em] text-[var(--color-vicinix)] opacity-70 uppercase">
             Tech by Vicinix
           </p>
         </div>

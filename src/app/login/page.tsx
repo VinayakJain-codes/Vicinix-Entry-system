@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { login } from './actions'
+import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -35,67 +36,76 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col justify-center py-12 sm:px-6 lg:px-8 bg-zinc-50">
+    <div className="flex min-h-screen flex-col justify-center py-12 sm:px-6 lg:px-8 bg-[var(--color-bg)]">
       <div className="sm:mx-auto sm:w-full sm:max-w-md flex flex-col items-center">
-        <img src="/Marketneraxvicinix.png" alt="Marketnera x Vicinix" className="w-64 object-contain mb-4 p-4 bg-black rounded-xl" style={{ minHeight: '80px' }} />
-        <h2 className="mt-2 text-center text-3xl font-bold tracking-tight text-zinc-900">
-          Sign in to your account
+        <h2 className="mt-2 text-center text-3xl font-black tracking-tight text-[var(--color-marketnera)] uppercase">
+          MARKETNERA
         </h2>
+        <p className="mt-2 text-center text-[var(--color-muted)] font-medium">
+          Sign in to continue
+        </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-zinc-200">
+        <div className="bg-[var(--color-surface)] py-8 px-4 sm:rounded-2xl sm:px-10 border border-[var(--color-marketnera-glow)] shadow-[0_0_40px_rgba(19,236,91,0.03)] mx-4 sm:mx-0">
           
           {error && (
-            <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200">
+            <div className="mb-6 bg-red-500/10 text-red-400 p-4 rounded-xl text-sm border border-red-500/20 font-medium text-center">
               {error}
             </div>
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
+              <label htmlFor="email" className="block text-sm font-medium text-[var(--color-text)]">
                 Email address
               </label>
-              <div className="mt-1">
+              <div className="mt-2">
                 <input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
-                  className="block w-full appearance-none rounded-md border border-zinc-300 px-3 py-2 placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-green-500 sm:text-sm bg-white text-zinc-900"
+                  className="block w-full appearance-none rounded-xl border border-[var(--color-border)] px-4 py-3 placeholder-[var(--color-muted)] shadow-sm focus:border-[var(--color-marketnera)] focus:outline-none focus:ring-1 focus:ring-[var(--color-marketnera)] sm:text-sm bg-[#0A0F0D] text-[var(--color-text)] transition-colors"
+                  placeholder="admin@marketnera.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
+              <label htmlFor="password" className="block text-sm font-medium text-[var(--color-text)]">
                 Password
               </label>
-              <div className="mt-1">
+              <div className="mt-2">
                 <input
                   id="password"
                   name="password"
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="block w-full appearance-none rounded-md border border-zinc-300 px-3 py-2 placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-green-500 sm:text-sm bg-white text-zinc-900"
+                  className="block w-full appearance-none rounded-xl border border-[var(--color-border)] px-4 py-3 placeholder-[var(--color-muted)] shadow-sm focus:border-[var(--color-marketnera)] focus:outline-none focus:ring-1 focus:ring-[var(--color-marketnera)] sm:text-sm bg-[#0A0F0D] text-[var(--color-text)] transition-colors"
+                  placeholder="••••••••"
                 />
               </div>
             </div>
 
-            <div>
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full justify-center rounded-md border border-transparent bg-zinc-900 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 disabled:opacity-50"
-                style={{ backgroundColor: '#18181b', color: 'white' }}
+                className="flex w-full justify-center items-center gap-2 rounded-xl border border-transparent bg-[var(--color-marketnera)] py-3 px-4 text-sm font-bold text-black shadow-[0_0_15px_rgba(19,236,91,0.2)] hover:shadow-[0_0_25px_rgba(19,236,91,0.4)] hover:bg-[var(--color-marketnera-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-marketnera)] focus:ring-offset-2 focus:ring-offset-[#111918] disabled:opacity-50 transition-all active:scale-[0.98]"
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</> : 'Sign in'}
               </button>
             </div>
           </form>
+        </div>
+        
+        <div className="mt-8 text-center">
+          <p className="text-[10px] font-bold tracking-[0.2em] text-[var(--color-vicinix)] opacity-50 uppercase">
+            Built by Vicinix
+          </p>
         </div>
       </div>
     </div>

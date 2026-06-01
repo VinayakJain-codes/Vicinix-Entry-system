@@ -5,26 +5,36 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-export async function blastWhatsAppForEvent(eventId: string, batchSize: number = 50) {
+export async function blastWhatsAppForEvent(eventId: string, batchSize: number = 50, retryFailedOnly: boolean = false) {
   const supabase = await createClient()
 
   // Verify user is admin
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const adminClient = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-  const { data: roleData } = await adminClient.from('user_roles').select('role').eq('id', user.id).single()
+  const { data: roleData } = await adminClient.from('user_roles').select('role').eq('user_id', user.id).single()
   if (!roleData || !['admin', 'super_admin'].includes(roleData.role)) {
     return { error: 'Unauthorized role' }
   }
 
   // Fetch students with tokens but not sent yet
-  const { data: students, error: fetchError } = await supabase
+  let query = adminClient
     .from('students')
-    .select('id, name, phone_number, qr_url')
+    .select('id, phone_number, qr_token, qr_status, name, qr_url')
     .eq('event_id', eventId)
-    .neq('token', null)
-    .eq('qr_status', 'pending')
+    .not('qr_token', 'is', null)
     .limit(batchSize)
+
+  if (retryFailedOnly) {
+    query = query.eq('qr_status', 'error')
+  } else {
+    // If we're not retrying, we send to 'generated' ones (meaning they have token & url but not sent).
+    // The previous code checked for 'pending' but the DB status is usually 'generated' or 'sent'. Wait, let's use 'generated'.
+    // If the schema uses 'pending', let's stick to what was there or check both.
+    query = query.in('qr_status', ['generated', 'pending'])
+  }
+
+  const { data: students, error: fetchError } = await query
 
   if (fetchError) return { error: fetchError.message }
   if (!students || students.length === 0) return { processed: 0, remaining: 0, errors: 0 }
@@ -84,16 +94,21 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
       })
 
       if (res.ok) {
-        await supabase.from('students').update({ qr_status: 'sent' }).eq('id', student.id)
+        await adminClient
+        .from('students')
+        .update({ qr_status: 'sent' })
+        .eq('id', student.id)
         processed++
       } else {
         console.error('WhatsApp API Error:', await res.text())
-        await supabase.from('students').update({ qr_status: 'error' }).eq('id', student.id)
+        await adminClient.from('students').update({ qr_status: 'error' }).eq('id', student.id)
         errors++
       }
     } catch (e) {
-      console.error('Fetch Error:', e)
-      await supabase.from('students').update({ qr_status: 'error' }).eq('id', student.id)
+      const { error: studentError } = await adminClient
+      .from('students')
+      .update({ qr_status: 'failed' })
+      .eq('id', student.id)
       errors++
     }
 
@@ -102,12 +117,19 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
   }
 
   // Check remaining
-  const { count } = await supabase
+  let remainingQuery = supabase
     .from('students')
     .select('id', { count: 'exact', head: true })
     .eq('event_id', eventId)
     .neq('token', null)
-    .eq('qr_status', 'pending')
+  
+  if (retryFailedOnly) {
+    remainingQuery = remainingQuery.eq('qr_status', 'error')
+  } else {
+    remainingQuery = remainingQuery.in('qr_status', ['generated', 'pending'])
+  }
+
+  const { count } = await remainingQuery
 
   return { processed, remaining: count || 0, errors }
 }

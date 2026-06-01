@@ -1,10 +1,15 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { Tables } from '@/types/database.types'
 
+const getAdminClient = () => createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 export async function getDashboardStats(eventId: string) {
-  const supabase = await createClient()
+  const supabase = getAdminClient()
 
   // Get headcount (students with scanned_at != null)
   const { count: headcount } = await supabase
@@ -26,15 +31,23 @@ export async function getDashboardStats(eventId: string) {
     .eq('id', eventId)
     .single()
 
+  // Get QR Delivered count
+  const { count: qrDelivered } = await supabase
+    .from('students')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_id', eventId)
+    .eq('qr_status', 'sent')
+
   return {
     headcount: headcount || 0,
     totalStudents: totalStudents || 0,
-    masterScans: eventData?.master_scan_count || 0
+    masterScans: eventData?.master_scan_count || 0,
+    qrDelivered: qrDelivered || 0
   }
 }
 
 export async function getStudents(eventId: string) {
-  const supabase = await createClient()
+  const supabase = getAdminClient()
   
   const { data: students, error } = await supabase
     .from('students')

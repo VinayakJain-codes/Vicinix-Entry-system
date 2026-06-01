@@ -17,26 +17,82 @@ export type Database = {
       events: {
         Row: {
           created_at: string | null
+          date: string | null
           id: string
+          is_active: boolean | null
+          master_qr_token: string | null
           master_scan_count: number | null
           name: string
         }
         Insert: {
           created_at?: string | null
+          date?: string | null
           id?: string
+          is_active?: boolean | null
+          master_qr_token?: string | null
           master_scan_count?: number | null
           name: string
         }
         Update: {
           created_at?: string | null
+          date?: string | null
           id?: string
+          is_active?: boolean | null
+          master_qr_token?: string | null
           master_scan_count?: number | null
           name?: string
         }
         Relationships: []
       }
+      scan_logs: {
+        Row: {
+          event_id: string | null
+          gate_label: string | null
+          id: string
+          scan_result: string
+          scanned_at: string | null
+          scanned_by: string | null
+          student_id: string | null
+        }
+        Insert: {
+          event_id?: string | null
+          gate_label?: string | null
+          id?: string
+          scan_result: string
+          scanned_at?: string | null
+          scanned_by?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          event_id?: string | null
+          gate_label?: string | null
+          id?: string
+          scan_result?: string
+          scanned_at?: string | null
+          scanned_by?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
+          email: string | null
+          enrollment_no: string | null
           event_id: string | null
           id: string
           name: string
@@ -44,9 +100,12 @@ export type Database = {
           qr_status: string | null
           qr_url: string | null
           scanned_at: string | null
+          student_id: string | null
           token: string | null
         }
         Insert: {
+          email?: string | null
+          enrollment_no?: string | null
           event_id?: string | null
           id?: string
           name: string
@@ -54,9 +113,12 @@ export type Database = {
           qr_status?: string | null
           qr_url?: string | null
           scanned_at?: string | null
+          student_id?: string | null
           token?: string | null
         }
         Update: {
+          email?: string | null
+          enrollment_no?: string | null
           event_id?: string | null
           id?: string
           name?: string
@@ -64,6 +126,7 @@ export type Database = {
           qr_status?: string | null
           qr_url?: string | null
           scanned_at?: string | null
+          student_id?: string | null
           token?: string | null
         }
         Relationships: [
@@ -78,16 +141,16 @@ export type Database = {
       }
       user_roles: {
         Row: {
-          id: string
           role: Database["public"]["Enums"]["user_role"]
+          user_id: string
         }
         Insert: {
-          id: string
           role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
         }
         Update: {
-          id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
         }
         Relationships: []
       }

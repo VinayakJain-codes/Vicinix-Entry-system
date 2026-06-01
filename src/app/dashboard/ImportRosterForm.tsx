@@ -51,6 +51,19 @@ export default function ImportRosterForm() {
         </div>
 
         <div>
+          <label htmlFor="eventDate" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Event Date
+          </label>
+          <input
+            type="date"
+            name="eventDate"
+            id="eventDate"
+            required
+            className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-zinc-500 dark:bg-zinc-900 dark:text-white"
+          />
+        </div>
+
+        <div>
           <label htmlFor="roster" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Excel File (.xlsx, .csv)
           </label>

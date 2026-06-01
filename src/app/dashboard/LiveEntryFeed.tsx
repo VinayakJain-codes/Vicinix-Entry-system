@@ -35,7 +35,7 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
 
     // Subscribe to realtime updates for this event
     const channel = supabase
-      .channel('public:students')
+      .channel('public:students-feed')
       .on(
         'postgres_changes',
         {
@@ -69,39 +69,44 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
   if (!eventId) return null
 
   return (
-    <div className="bg-white dark:bg-zinc-800 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700 h-[600px] flex flex-col">
-      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-4 sticky top-0 bg-white dark:bg-zinc-800 py-2 border-b border-zinc-100 dark:border-zinc-700 z-10">
+    <div className="bg-[var(--color-surface)] p-6 rounded-2xl shadow-sm border border-[var(--color-border)] h-[600px] flex flex-col relative overflow-hidden">
+      {/* Subtle corner glow */}
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-[var(--color-marketnera)]/5 blur-[50px] rounded-full pointer-events-none"></div>
+
+      <h3 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-widest mb-4 sticky top-0 bg-[var(--color-surface)] py-2 border-b border-[var(--color-border)] z-10">
         Live Entry Feed
       </h3>
       
-      <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-zinc-800 animate-pulse">
-              <div className="flex flex-col space-y-2">
-                <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-32"></div>
-                <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-24"></div>
-              </div>
-              <div className="flex flex-col items-end space-y-2">
-                <div className="h-6 bg-zinc-200 dark:bg-zinc-700 rounded-md w-16"></div>
-                <div className="h-2 bg-zinc-200 dark:bg-zinc-700 rounded w-12"></div>
+            <div key={i} className="feed-item flex items-center gap-3 p-3 bg-[var(--color-surface-2)] rounded-xl border border-[var(--color-border)] animate-pulse">
+              <div className="w-9 h-9 rounded-full bg-[var(--color-border)]"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-[var(--color-border)] rounded w-32"></div>
+                <div className="h-3 bg-[var(--color-border)] rounded w-24"></div>
               </div>
             </div>
           ))
         ) : entries.length === 0 ? (
-          <p className="text-sm text-zinc-500 italic mt-4 text-center">No recent entries</p>
+          <div className="h-full flex items-center justify-center">
+            <p className="text-sm text-[var(--color-muted)] font-mono">WAITING FOR SCANS...</p>
+          </div>
         ) : (
           entries.map((student) => (
-            <div key={student.id} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-zinc-800 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex flex-col">
-                <span className="font-medium text-zinc-900 dark:text-zinc-100">{student.name}</span>
-                <span className="text-xs text-zinc-500">{student.phone_number}</span>
+            <div key={student.id} className="feed-item flex items-center gap-3 p-3 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-marketnera)]/30 transition-all">
+              <div className="w-9 h-9 rounded-full bg-[var(--color-marketnera)]/20 border border-[var(--color-marketnera)]/40 flex items-center justify-center text-[var(--color-marketnera)] font-bold text-sm flex-shrink-0">
+                {student.name[0].toUpperCase()}
               </div>
-              <div className="flex flex-col items-end">
-                <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-1 rounded-md">GRANTED</span>
-                <span className="text-[10px] text-zinc-400 mt-1">
-                  {student.scanned_at ? new Date(student.scanned_at).toLocaleTimeString() : ''}
-                </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[var(--color-text)] truncate">{student.name}</p>
+                <p className="text-xs text-[var(--color-muted)] font-mono">{student.student_id || student.phone_number}</p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <span className="text-[10px] font-bold text-[var(--color-marketnera)] bg-[var(--color-marketnera)]/10 px-2 py-0.5 rounded-full uppercase tracking-wider">GRANTED</span>
+                <p className="text-[10px] text-[var(--color-muted)] mt-1 font-mono">
+                  {student.scanned_at ? new Date(student.scanned_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                </p>
               </div>
             </div>
           ))

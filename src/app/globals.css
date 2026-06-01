@@ -1,23 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #0a0a0a;
-  --color-secondary: #ededed;
-}
+  /* Marketnera brand */
+  --color-marketnera:       #13EC5B;
+  --color-marketnera-dark:  #0FBF49;
+  --color-marketnera-glow:  rgba(19, 236, 91, 0.15);
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Vicinix sponsor */
+  --color-vicinix:          #F97316;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Dark surfaces */
+  --color-bg:        #0A0F0D;   /* near-black with green undertone */
+  --color-surface:   #111918;   /* card bg */
+  --color-surface-2: #1A2420;   /* nested card bg */
+  --color-border:    #1F2D28;   /* subtle borders */
+  --color-muted:     #4B6358;   /* secondary text */
+  --color-text:      #E8F5F0;   /* primary text */
+
+  /* Status */
+  --color-granted:  #13EC5B;
+  --color-denied:   #EF4444;
+  --color-pending:  #F59E0B;
+
+  /* Fonts */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-display);
+}
+
+/* Marketnera glow effect for cards */
+.card-glow {
+  box-shadow: 0 0 0 1px var(--color-border),
+              0 4px 24px rgba(19, 236, 91, 0.06);
+}
+
+.card-glow:hover {
+  box-shadow: 0 0 0 1px rgba(19, 236, 91, 0.3),
+              0 8px 32px rgba(19, 236, 91, 0.12);
+}
+
+/* Scan frame animation */
+@keyframes scan-pulse {
+  0%, 100% { border-color: rgba(19, 236, 91, 0.6); }
+  50%       { border-color: rgba(19, 236, 91, 1); box-shadow: 0 0 20px rgba(19, 236, 91, 0.4); }
+}
+
+.scan-frame { animation: scan-pulse 2s ease-in-out infinite; }
+
+/* Entry feed item animation */
+@keyframes slide-in-top {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.feed-item { animation: slide-in-top 0.3s ease-out; }
+
+/* Number counter animation */
+@keyframes count-up {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
 }

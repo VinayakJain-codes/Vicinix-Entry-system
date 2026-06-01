@@ -1,48 +1,86 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Html5QrcodeScanner } from 'html5-qrcode'
+import { createClient } from '@/utils/supabase/client'
+import { CheckCircle2, XCircle, RefreshCw, Zap } from 'lucide-react'
+
+type ScanResult = {
+  status: 'idle' | 'scanning' | 'success' | 'invalid' | 'duplicate' | 'master'
+  message?: string
+  student?: any
+  event?: any
+}
 
 export default function ScanPage() {
-  const [scanResult, setScanResult] = useState<{ status: 'idle' | 'scanning' | 'success' | 'invalid' | 'duplicate' | 'master'; message?: string; student?: any; event?: any }>({ status: 'scanning' })
+  const [scanResult, setScanResult] = useState<ScanResult>({ status: 'scanning' })
+  const [guardEmail, setGuardEmail] = useState<string>('')
+  const [gate, setGate] = useState('Gate A')
+  const [sessionScans, setSessionScans] = useState(0)
+  
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
+  const resetTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    let scanner: Html5QrcodeScanner | null = null;
-    
+    const fetchUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) {
+        setGuardEmail(user.email)
+      }
+    }
+    fetchUser()
+  }, [])
+
+  // Haptics and Sounds
+  const triggerHaptic = (type: 'success' | 'error') => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      if (type === 'success') navigator.vibrate(200) // Short pulse
+      else navigator.vibrate([200, 100, 200, 100, 200]) // 3 pulses for error
+    }
+  }
+
+  useEffect(() => {
     if (scanResult.status === 'scanning') {
-      scanner = new Html5QrcodeScanner(
+      scannerRef.current = new Html5QrcodeScanner(
         "qr-reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
         /* verbose= */ false
       )
 
-      scanner.render(async (decodedText) => {
+      scannerRef.current.render(async (decodedText) => {
         // Pause scanning
-        scanner?.clear()
+        scannerRef.current?.clear()
         setScanResult({ status: 'idle' })
 
         try {
           const res = await fetch('/api/scan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: decodedText })
+            body: JSON.stringify({ token: decodedText, gate_label: gate }) // pass gate label
           })
           const data = await res.json()
 
           if (res.ok) {
+            setSessionScans(prev => prev + 1)
+            triggerHaptic('success')
             if (data.isMaster) {
               setScanResult({ status: 'master', event: data.event })
             } else {
               setScanResult({ status: 'success', student: data.student })
             }
           } else if (res.status === 404) {
+            triggerHaptic('error')
             setScanResult({ status: 'invalid', message: data.error })
           } else if (res.status === 400) {
+            triggerHaptic('error')
             setScanResult({ status: 'duplicate', message: data.error, student: data.student })
           } else {
+            triggerHaptic('error')
             setScanResult({ status: 'invalid', message: 'Unknown error' })
           }
         } catch (e) {
+          triggerHaptic('error')
           setScanResult({ status: 'invalid', message: 'Network error' })
         }
       }, (err) => {
@@ -51,58 +89,142 @@ export default function ScanPage() {
     }
 
     return () => {
-      scanner?.clear().catch(console.error)
+      scannerRef.current?.clear().catch(console.error)
+    }
+  }, [scanResult.status, gate])
+
+  // Auto-reset effect for results
+  useEffect(() => {
+    if (['success', 'master', 'invalid', 'duplicate'].includes(scanResult.status)) {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+      
+      resetTimerRef.current = setTimeout(() => {
+        setScanResult({ status: 'scanning' })
+      }, 2500)
+    }
+
+    return () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
     }
   }, [scanResult.status])
 
   return (
-    <div className={`flex flex-col min-h-screen font-sans ${
-      scanResult.status === 'success' ? 'bg-green-500' :
-      scanResult.status === 'master' ? 'bg-blue-500' :
-      scanResult.status === 'invalid' ? 'bg-red-500' :
-      scanResult.status === 'duplicate' ? 'bg-yellow-500' :
-      'bg-zinc-900'
-    } transition-colors duration-300 items-center justify-center p-4`}>
+    <div className="flex flex-col min-h-[100dvh] bg-[#0A0F0D] text-[#E8F5F0] overflow-hidden relative">
       
-      {scanResult.status === 'scanning' && (
-        <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-2xl">
-          <div className="p-4 bg-zinc-100 text-center font-bold text-zinc-800">
-            Scan QR Code
+      {/* Sticky Header */}
+      <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-center bg-[#0A0F0D]/80 backdrop-blur-md z-40 border-b border-[#1F2D28]">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#13EC5B] animate-pulse"></div>
+            <h1 className="font-black tracking-widest text-[#13EC5B] uppercase text-sm">MARKETNERA</h1>
           </div>
-          <div id="qr-reader" className="w-full text-black"></div>
+          <div className="text-[10px] font-mono text-[#4B6358] mt-1 truncate max-w-[150px]">
+            {guardEmail || 'Authenticating...'}
+          </div>
+        </div>
+        
+        <select 
+          value={gate}
+          onChange={(e) => setGate(e.target.value)}
+          className="bg-[#111918] border border-[#1F2D28] text-sm font-bold px-3 py-1.5 rounded-lg focus:outline-none focus:border-[#13EC5B] appearance-none text-right"
+        >
+          <option value="Gate A">Gate A</option>
+          <option value="Gate B">Gate B</option>
+          <option value="Main Gate">Main Gate</option>
+          <option value="VIP">VIP</option>
+        </select>
+      </div>
+
+      {/* Main Scan Area */}
+      <div className="flex-1 flex flex-col items-center justify-center pt-20 pb-24 relative">
+        {scanResult.status === 'scanning' && (
+          <div className="w-full max-w-sm px-4">
+            <div className="scan-frame relative rounded-[2rem] overflow-hidden border-4 border-transparent shadow-[0_0_40px_rgba(19,236,91,0.1)]">
+              <div id="qr-reader" className="w-full h-full text-black bg-black"></div>
+            </div>
+          </div>
+        )}
+
+        {scanResult.status === 'idle' && (
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="w-12 h-12 border-4 border-[#13EC5B] border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-bold tracking-widest uppercase text-[#4B6358]">Verifying...</p>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Session Counter */}
+      {scanResult.status === 'scanning' && (
+        <div className="absolute bottom-0 left-0 w-full p-6 flex justify-between items-center bg-gradient-to-t from-black to-transparent z-30">
+          <div className="flex gap-4">
+            <button className="p-3 rounded-full bg-[#111918] border border-[#1F2D28] text-[#4B6358] hover:text-[#13EC5B] transition-colors">
+              <Zap className="w-5 h-5" />
+            </button>
+            <button className="p-3 rounded-full bg-[#111918] border border-[#1F2D28] text-[#4B6358] hover:text-[#13EC5B] transition-colors">
+              <RefreshCw className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] uppercase tracking-widest text-[#4B6358] font-bold">Session Scans</span>
+            <span className="text-3xl font-black text-[#E8F5F0] font-mono">{sessionScans}</span>
+          </div>
         </div>
       )}
 
+      {/* Overlays */}
       {scanResult.status !== 'scanning' && scanResult.status !== 'idle' && (
-        <div className="text-center p-8 bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl max-w-sm w-full border border-white/20 text-white">
-          <h1 className="text-5xl font-black mb-4 uppercase tracking-wider">
-            {scanResult.status === 'master' ? 'VIP ENTRY' : scanResult.status}
-          </h1>
-          {scanResult.message && <p className="text-xl mb-6 font-medium">{scanResult.message}</p>}
-          {scanResult.student && (
-            <div className="mb-8 p-4 bg-black/20 rounded-xl">
-              <p className="text-2xl font-bold">{scanResult.student.name}</p>
-              <p className="text-sm opacity-80 mt-1">{scanResult.student.phone_number}</p>
-            </div>
-          )}
-          {scanResult.event && (
-            <div className="mb-8 p-4 bg-black/20 rounded-xl">
-              <p className="text-2xl font-bold">{scanResult.event.name}</p>
-              <p className="text-sm opacity-80 mt-1">Master Token (Multi-Use)</p>
-            </div>
-          )}
-          
-          <button
-            onClick={() => setScanResult({ status: 'scanning' })}
-            className="w-full py-4 px-6 bg-white text-zinc-900 rounded-xl font-bold text-lg hover:bg-zinc-100 transition-transform active:scale-95 shadow-xl"
-          >
-            Scan Next
-          </button>
+        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-200 ${
+          scanResult.status === 'success' || scanResult.status === 'master' ? 'bg-[#13EC5B] text-black' : 
+          'bg-red-500 text-white'
+        }`}>
+          <div className="flex flex-col items-center text-center max-w-sm w-full">
+            {scanResult.status === 'success' || scanResult.status === 'master' ? (
+              <CheckCircle2 className="w-24 h-24 mb-6 stroke-[3]" />
+            ) : (
+              <XCircle className="w-24 h-24 mb-6 stroke-[3]" />
+            )}
+            
+            <h1 className="text-5xl font-black uppercase tracking-tight mb-2">
+              {scanResult.status === 'success' ? 'GRANTED' : 
+               scanResult.status === 'master' ? 'VIP GRANTED' : 
+               'DENIED'}
+            </h1>
+            
+            <div className="h-1 w-16 bg-current opacity-20 rounded-full mb-6"></div>
+
+            {scanResult.student && (
+              <div className="space-y-1">
+                <p className="text-3xl font-bold">{scanResult.student.name}</p>
+                <p className="text-lg opacity-80 font-mono">{scanResult.student.student_id || scanResult.student.phone_number}</p>
+                {scanResult.student.enrollment_no && (
+                  <p className="text-sm opacity-60 font-mono">Enrollment: {scanResult.student.enrollment_no}</p>
+                )}
+              </div>
+            )}
+            
+            {scanResult.event && (
+              <div className="space-y-1">
+                <p className="text-3xl font-bold">{scanResult.event.name}</p>
+                <p className="text-lg opacity-80 font-mono">Master Token</p>
+              </div>
+            )}
+
+            {scanResult.message && (
+              <p className="text-xl font-semibold mt-4 bg-black/10 px-4 py-2 rounded-xl backdrop-blur-sm">
+                {scanResult.message}
+              </p>
+            )}
+
+            <button
+              onClick={() => setScanResult({ status: 'scanning' })}
+              className="mt-12 w-full py-4 rounded-2xl bg-black/10 backdrop-blur-md border border-current/20 font-bold uppercase tracking-widest hover:bg-black/20 transition-colors active:scale-95"
+            >
+              Scan Next →
+            </button>
+            
+            <p className="absolute bottom-8 text-[10px] font-black tracking-[0.3em] opacity-30">MARKETNERA</p>
+          </div>
         </div>
-      )}
-      
-      {scanResult.status === 'idle' && (
-        <div className="text-white font-bold animate-pulse text-2xl">Processing...</div>
       )}
     </div>
   )

@@ -25,7 +25,7 @@ export async function login(email: string, password: string) {
     const { data: roleData, error: roleError } = await adminClient
       .from('user_roles')
       .select('role')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     console.log('Role lookup:', roleData, roleError?.message)
