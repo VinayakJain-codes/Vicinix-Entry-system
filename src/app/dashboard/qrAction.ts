@@ -66,7 +66,7 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
     const finalBuffer = await sharp(templatePath)
     .composite([
       { input: svgOverlay, top: 0, left: 0 },
-      { input: qrBuffer, top: 250, left: 270 } 
+      { input: qrBuffer, top: 310, left: 270 } 
     ])
     .png()
     .toBuffer()
