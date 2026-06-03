@@ -40,7 +40,7 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
   if (!students || students.length === 0) return { processed: 0, remaining: 0, errors: 0 }
 
   const token = process.env.WHATSAPP_TOKEN
-  const phoneId = process.env.WHATSAPP_whatsapp_number_ID
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
   const templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'qr_entry_ticket'
 
   if (!token || !phoneId) {
