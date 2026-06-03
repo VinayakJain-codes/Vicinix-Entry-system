@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { Html5QrcodeScanner } from 'html5-qrcode'
+import { Scanner } from '@yudiel/react-qr-scanner'
 import { createClient } from '@/utils/supabase/client'
 import { CheckCircle2, XCircle, RefreshCw, Zap } from 'lucide-react'
 
@@ -18,7 +18,6 @@ export default function ScanPage() {
   const [gate, setGate] = useState('Gate A')
   const [sessionScans, setSessionScans] = useState(0)
   
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -40,58 +39,42 @@ export default function ScanPage() {
     }
   }
 
-  useEffect(() => {
-    if (scanResult.status === 'scanning') {
-      scannerRef.current = new Html5QrcodeScanner(
-        "qr-reader",
-        { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-        /* verbose= */ false
-      )
+  const handleScan = async (decodedText: string) => {
+    if (scanResult.status !== 'scanning') return;
+    
+    setScanResult({ status: 'idle' })
 
-      scannerRef.current.render(async (decodedText) => {
-        // Pause scanning
-        scannerRef.current?.clear()
-        setScanResult({ status: 'idle' })
-
-        try {
-          const res = await fetch('/api/scan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: decodedText, gate_label: gate }) // pass gate label
-          })
-          const data = await res.json()
-
-          if (res.ok) {
-            setSessionScans(prev => prev + 1)
-            triggerHaptic('success')
-            if (data.isMaster) {
-              setScanResult({ status: 'master', event: data.event })
-            } else {
-              setScanResult({ status: 'success', student: data.student })
-            }
-          } else if (res.status === 404) {
-            triggerHaptic('error')
-            setScanResult({ status: 'invalid', message: data.error })
-          } else if (res.status === 400) {
-            triggerHaptic('error')
-            setScanResult({ status: 'duplicate', message: data.error, student: data.student })
-          } else {
-            triggerHaptic('error')
-            setScanResult({ status: 'invalid', message: 'Unknown error' })
-          }
-        } catch (e) {
-          triggerHaptic('error')
-          setScanResult({ status: 'invalid', message: 'Network error' })
-        }
-      }, (err) => {
-        // ignore continuous scanning errors
+    try {
+      const res = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: decodedText, gate_label: gate }) // pass gate label
       })
-    }
+      const data = await res.json()
 
-    return () => {
-      scannerRef.current?.clear().catch(console.error)
+      if (res.ok) {
+        setSessionScans(prev => prev + 1)
+        triggerHaptic('success')
+        if (data.isMaster) {
+          setScanResult({ status: 'master', event: data.event })
+        } else {
+          setScanResult({ status: 'success', student: data.student })
+        }
+      } else if (res.status === 404) {
+        triggerHaptic('error')
+        setScanResult({ status: 'invalid', message: data.error })
+      } else if (res.status === 400) {
+        triggerHaptic('error')
+        setScanResult({ status: 'duplicate', message: data.error, student: data.student })
+      } else {
+        triggerHaptic('error')
+        setScanResult({ status: 'invalid', message: 'Unknown error' })
+      }
+    } catch (e) {
+      triggerHaptic('error')
+      setScanResult({ status: 'invalid', message: 'Network error' })
     }
-  }, [scanResult.status, gate])
+  }
 
   // Auto-reset effect for results
   useEffect(() => {
@@ -140,7 +123,11 @@ export default function ScanPage() {
         {scanResult.status === 'scanning' && (
           <div className="w-full max-w-sm px-4">
             <div className="scan-frame relative rounded-[2rem] overflow-hidden border-4 border-transparent shadow-[0_0_40px_rgba(19,236,91,0.1)]">
-              <div id="qr-reader" className="w-full h-full text-black bg-black"></div>
+              <Scanner 
+                onScan={(result) => handleScan(result[0].rawValue)}
+                allowMultiple={true}
+                scanDelay={2000}
+              />
             </div>
           </div>
         )}
