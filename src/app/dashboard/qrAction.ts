@@ -30,9 +30,9 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
   // Fetch students without tokens
   const { data: students, error: studentError } = await adminClient
     .from('students')
-    .select('id, phone_number, name, student_id, enrollment_no')
+    .select('id, whatsapp_number, name, student_id, roll_no')
     .eq('event_id', eventId)
-    .is('qr_token', null)
+    .is('token', null)
     .limit(batchSize)
 
   if (studentError) return { error: studentError.message }
@@ -66,7 +66,7 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
   <!-- Zone 4: White info zone -->
   <rect x="0" y="468" width="512" height="92" fill="#FFFFFF" />
   <text x="256" y="508" font-family="Arial" font-size="20" font-weight="800" fill="#111827" text-anchor="middle">${student.name}</text>
-  <text x="256" y="534" font-family="Arial" font-size="13" font-weight="600" fill="#6B7280" text-anchor="middle">ID: ${student.student_id || 'N/A'}  ·  Enrollment: ${student.enrollment_no || 'N/A'}</text>
+  <text x="256" y="534" font-family="Arial" font-size="13" font-weight="600" fill="#6B7280" text-anchor="middle">ID: ${student.student_id || 'N/A'}  ·  Enrollment: ${student.roll_no || 'N/A'}</text>
   
   <!-- Zone 5: Dark footer -->
   <rect x="0" y="560" width="512" height="60" fill="#0A0F0D" />
@@ -94,7 +94,7 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
     const fileName = `${eventId}/${student.id}.png`
     
     // Upload to storage
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await adminClient.storage
       .from('qrs')
       .upload(fileName, finalBuffer, { contentType: 'image/png', upsert: true })
 
@@ -103,12 +103,11 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
       continue
     }
 
-    const { data: publicUrlData } = supabase.storage.from('qrs').getPublicUrl(fileName)
+    const { data: publicUrlData } = adminClient.storage.from('qrs').getPublicUrl(fileName)
 
-    // Update student record
     const { error: updateError } = await adminClient
       .from('students')
-      .update({ qr_token: token, qr_url: publicUrlData.publicUrl })
+      .update({ token: token, qr_url: publicUrlData.publicUrl, qr_status: 'generated' })
       .eq('id', student.id)
 
     if (!updateError) {

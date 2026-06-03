@@ -20,9 +20,9 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
   // Fetch students with tokens but not sent yet
   let query = adminClient
     .from('students')
-    .select('id, phone_number, qr_token, qr_status, name, qr_url')
+    .select('id, whatsapp_number, token, qr_status, name, qr_url')
     .eq('event_id', eventId)
-    .not('qr_token', 'is', null)
+    .not('token', 'is', null)
     .limit(batchSize)
 
   if (retryFailedOnly) {
@@ -40,7 +40,7 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
   if (!students || students.length === 0) return { processed: 0, remaining: 0, errors: 0 }
 
   const token = process.env.WHATSAPP_TOKEN
-  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
+  const phoneId = process.env.WHATSAPP_whatsapp_number_ID
   const templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'qr_entry_ticket'
 
   if (!token || !phoneId) {
@@ -59,7 +59,7 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
     try {
       const payload = {
         messaging_product: 'whatsapp',
-        to: student.phone_number,
+        to: student.whatsapp_number,
         type: 'template',
         template: {
           name: templateName,

@@ -18,9 +18,9 @@ export default function ImportPage() {
   
   const [mapping, setMapping] = useState({
     name: '',
-    phone_number: '',
+    whatsapp_number: '',
     student_id: '',
-    enrollment_no: '',
+    roll_no: '',
     email: ''
   })
 
@@ -66,9 +66,9 @@ export default function ImportPage() {
         }
         setMapping({
           name: find(h => h.includes('name')),
-          phone_number: find(h => h.includes('phone') || h.includes('whatsapp') || h.includes('mobile')),
+          whatsapp_number: find(h => h.includes('phone') || h.includes('whatsapp') || h.includes('mobile')),
           student_id: find(h => h.includes('student') && h.includes('id')),
-          enrollment_no: find(h => h.includes('enroll')),
+          roll_no: find(h => h.includes('enroll')),
           email: find(h => h.includes('email')),
         })
 
@@ -82,7 +82,7 @@ export default function ImportPage() {
   }
 
   const handleMappingNext = () => {
-    if (!mapping.name || !mapping.phone_number) {
+    if (!mapping.name || !mapping.whatsapp_number) {
       toast.error('Name and Phone Number mappings are required')
       return
     }
@@ -98,18 +98,18 @@ export default function ImportPage() {
     setIsSubmitting(true)
     
     const nameIdx = headers.indexOf(mapping.name)
-    const phoneIdx = headers.indexOf(mapping.phone_number)
+    const phoneIdx = headers.indexOf(mapping.whatsapp_number)
     const sidIdx = headers.indexOf(mapping.student_id)
-    const enrollIdx = headers.indexOf(mapping.enrollment_no)
+    const enrollIdx = headers.indexOf(mapping.roll_no)
     const emailIdx = headers.indexOf(mapping.email)
 
     const mappedStudents = fileData.map(row => ({
       name: row[nameIdx],
-      phone_number: row[phoneIdx],
+      whatsapp_number: row[phoneIdx],
       student_id: sidIdx >= 0 ? row[sidIdx] : null,
-      enrollment_no: enrollIdx >= 0 ? row[enrollIdx] : null,
+      roll_no: enrollIdx >= 0 ? row[enrollIdx] : null,
       email: emailIdx >= 0 ? row[emailIdx] : null,
-    })).filter(s => s.name && s.phone_number)
+    })).filter(s => s.name && s.whatsapp_number)
 
     const res = await submitMappedRoster(selectedEventId, mappedStudents)
     
@@ -191,9 +191,9 @@ export default function ImportPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
                 { key: 'name', label: 'Student Name *' },
-                { key: 'phone_number', label: 'WhatsApp Number *' },
+                { key: 'whatsapp_number', label: 'WhatsApp Number *' },
                 { key: 'student_id', label: 'Student ID' },
-                { key: 'enrollment_no', label: 'Enrollment Number' },
+                { key: 'roll_no', label: 'Enrollment Number' },
                 { key: 'email', label: 'Email Address' },
               ].map(field => (
                 <div key={field.key}>
@@ -245,9 +245,9 @@ export default function ImportPage() {
                   {fileData.slice(0, 5).map((row, i) => (
                     <tr key={i} className="hover:bg-[var(--color-surface-2)] text-[var(--color-text)]">
                       <td className="px-6 py-4 font-bold">{row[headers.indexOf(mapping.name)] || '-'}</td>
-                      <td className="px-6 py-4 font-mono text-xs">{row[headers.indexOf(mapping.phone_number)] || '-'}</td>
+                      <td className="px-6 py-4 font-mono text-xs">{row[headers.indexOf(mapping.whatsapp_number)] || '-'}</td>
                       <td className="px-6 py-4 font-mono text-xs">{mapping.student_id ? row[headers.indexOf(mapping.student_id)] || '-' : '-'}</td>
-                      <td className="px-6 py-4 font-mono text-xs">{mapping.enrollment_no ? row[headers.indexOf(mapping.enrollment_no)] || '-' : '-'}</td>
+                      <td className="px-6 py-4 font-mono text-xs">{mapping.roll_no ? row[headers.indexOf(mapping.roll_no)] || '-' : '-'}</td>
                     </tr>
                   ))}
                 </tbody>

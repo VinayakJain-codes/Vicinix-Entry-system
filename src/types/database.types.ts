@@ -92,11 +92,11 @@ export type Database = {
       students: {
         Row: {
           email: string | null
-          enrollment_no: string | null
+          roll_no: string | null
           event_id: string | null
           id: string
           name: string
-          phone_number: string
+          whatsapp_number: string
           qr_status: string | null
           qr_url: string | null
           scanned_at: string | null
@@ -105,11 +105,11 @@ export type Database = {
         }
         Insert: {
           email?: string | null
-          enrollment_no?: string | null
+          roll_no?: string | null
           event_id?: string | null
           id?: string
           name: string
-          phone_number: string
+          whatsapp_number: string
           qr_status?: string | null
           qr_url?: string | null
           scanned_at?: string | null
@@ -118,11 +118,11 @@ export type Database = {
         }
         Update: {
           email?: string | null
-          enrollment_no?: string | null
+          roll_no?: string | null
           event_id?: string | null
           id?: string
           name?: string
-          phone_number?: string
+          whatsapp_number?: string
           qr_status?: string | null
           qr_url?: string | null
           scanned_at?: string | null

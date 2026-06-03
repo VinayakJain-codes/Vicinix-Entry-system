@@ -81,9 +81,9 @@ export async function importRoster(formData: FormData) {
     studentsToInsert.push({
       event_id: event.id,
       name: String(name).trim(),
-      phone_number: phone,
+      whatsapp_number: phone,
       student_id: studentId,
-      enrollment_no: enrollmentNo,
+      roll_no: enrollmentNo,
       email: email,
     })
   }

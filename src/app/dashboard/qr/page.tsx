@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { generateQRsForEvent } from '../qrAction'
 import { getActiveEvents } from '../import/actions'
+import { getStudents } from '../actions'
 import { QrCode, Loader2, Search } from 'lucide-react'
 
 export default function QRGenerationPage() {
@@ -12,12 +13,28 @@ export default function QRGenerationPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState<{ processed: number; remaining: number } | null>(null)
 
+  const [previews, setPreviews] = useState<any[]>([])
+
+  const fetchPreviews = async (eventId: string) => {
+    if (!eventId) return
+    const data = await getStudents(eventId)
+    setPreviews(data.filter(s => s.qr_url).slice(0, 10))
+  }
+
   useEffect(() => {
     getActiveEvents().then(data => {
       setEvents(data)
-      if (data.length > 0) setSelectedEventId(data[0].id)
+      if (data.length > 0) {
+        setSelectedEventId(data[0].id)
+      }
     })
   }, [])
+
+  useEffect(() => {
+    if (selectedEventId) {
+      fetchPreviews(selectedEventId)
+    }
+  }, [selectedEventId])
 
   const handleGenerate = async () => {
     if (!selectedEventId) return
@@ -42,6 +59,7 @@ export default function QRGenerationPage() {
         currentRemaining = result.remaining || 0
       }
       toast.success('QR generation completed.')
+      fetchPreviews(selectedEventId)
     } catch (e: any) {
       toast.error(e.message)
     } finally {
@@ -114,17 +132,27 @@ export default function QRGenerationPage() {
         </div>
       </div>
       
-      {/* Mock Previews area as suggested in plan */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 opacity-50 pointer-events-none">
-         {Array.from({ length: 10 }).map((_, i) => (
-           <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 flex flex-col items-center">
-             <div className="w-full aspect-square bg-[#0A0F0D] rounded-lg border border-[var(--color-border)] flex items-center justify-center mb-3">
-               <QrCode className="w-10 h-10 text-[var(--color-muted)] opacity-30" />
+      {/* Previews area */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+         {previews.length > 0 ? previews.map((s, i) => (
+           <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 flex flex-col items-center hover:border-[var(--color-marketnera)]/50 transition-colors">
+             <div className="w-full aspect-square bg-white rounded-lg border border-[var(--color-border)] flex items-center justify-center mb-3 overflow-hidden p-2">
+               <img src={s.qr_url} alt="QR" className="w-full h-full object-contain" />
              </div>
-             <div className="w-3/4 h-2 bg-[var(--color-border)] rounded mb-1"></div>
-             <div className="w-1/2 h-2 bg-[var(--color-border)] rounded"></div>
+             <div className="text-xs font-bold text-[var(--color-text)] truncate w-full text-center">{s.name}</div>
+             <div className="text-[10px] text-[var(--color-muted)] font-mono truncate w-full text-center">{s.roll_no || s.whatsapp_number}</div>
            </div>
-         ))}
+         )) : (
+           Array.from({ length: 5 }).map((_, i) => (
+             <div key={i} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 flex flex-col items-center opacity-50 pointer-events-none">
+               <div className="w-full aspect-square bg-[#0A0F0D] rounded-lg border border-[var(--color-border)] flex items-center justify-center mb-3">
+                 <QrCode className="w-10 h-10 text-[var(--color-muted)] opacity-30" />
+               </div>
+               <div className="w-3/4 h-2 bg-[var(--color-border)] rounded mb-1"></div>
+               <div className="w-1/2 h-2 bg-[var(--color-border)] rounded"></div>
+             </div>
+           ))
+         )}
       </div>
     </div>
   )

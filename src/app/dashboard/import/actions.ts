@@ -33,16 +33,16 @@ export async function submitMappedRoster(eventId: string, students: any[]) {
   // Fetch existing phones for this event to deduplicate on the server side just in case
   const { data: existingStudents } = await supabase
     .from('students')
-    .select('phone_number')
+    .select('whatsapp_number')
     .eq('event_id', eventId)
 
-  const existingPhones = new Set((existingStudents || []).map(s => s.phone_number))
+  const existingPhones = new Set((existingStudents || []).map(s => s.whatsapp_number))
 
   const studentsToInsert = []
   let skipped = 0
 
   for (const row of students) {
-    const rawPhone = row.phone_number
+    const rawPhone = row.whatsapp_number
     if (!rawPhone) continue
 
     const phone = String(rawPhone).replace(/\D/g, '')
@@ -56,9 +56,9 @@ export async function submitMappedRoster(eventId: string, students: any[]) {
     studentsToInsert.push({
       event_id: eventId,
       name: String(row.name).trim(),
-      phone_number: phone,
+      whatsapp_number: phone,
       student_id: row.student_id ? String(row.student_id).trim() : null,
-      enrollment_no: row.enrollment_no ? String(row.enrollment_no).trim() : null,
+      roll_no: row.roll_no ? String(row.roll_no).trim() : null,
       email: row.email ? String(row.email).trim() : null,
     })
   }
