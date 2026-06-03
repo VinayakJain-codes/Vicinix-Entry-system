@@ -62,3 +62,23 @@ export async function getStudents(eventId: string) {
 
   return students as Tables<'students'>[]
 }
+
+export async function deleteEvent(eventId: string) {
+  const supabase = getAdminClient()
+  
+  // Delete scan logs first
+  await supabase.from('scan_logs').delete().eq('event_id', eventId)
+  
+  // Delete students
+  await supabase.from('students').delete().eq('event_id', eventId)
+
+  // Delete event
+  const { error } = await supabase.from('events').delete().eq('id', eventId)
+
+  if (error) {
+    console.error('Error deleting event:', error)
+    return { error: 'Failed to delete event' }
+  }
+
+  return { success: true }
+}

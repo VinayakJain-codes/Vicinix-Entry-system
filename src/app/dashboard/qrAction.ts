@@ -5,6 +5,8 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 import qrcode from 'qrcode'
 import sharp from 'sharp'
+import path from 'path'
+import fs from 'fs'
 
 export async function generateQRsForEvent(eventId: string, batchSize: number = 50) {
   const supabase = await createClient()
@@ -48,12 +50,23 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
     const fullUrl = `${appUrl}/scan?token=${token}`
     
     // Generate QR matrix
-    const qrBuffer = await qrcode.toBuffer(fullUrl, { type: 'png', width: 688, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+    const qrBuffer = await qrcode.toBuffer(fullUrl, { type: 'png', width: 540, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
     
-    // Composite using sharp over Template.png
-    const finalBuffer = await sharp('public/Template.png')
+    const svgOverlay = Buffer.from(`
+<svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg">
+  <text x="50" y="90" font-family="Arial" font-size="52" font-weight="900" fill="#000000" text-anchor="start">${eventName}</text>
+  <text x="1030" y="65" font-family="Arial" font-size="52" font-weight="900" fill="#000000" text-anchor="end">${student.name}</text>
+  <text x="1030" y="125" font-family="Arial" font-size="40" font-weight="700" fill="#000000" text-anchor="end">ENR: ${student.roll_no || 'N/A'}</text>
+</svg>
+    `)
+
+    const templatePath = path.join(process.cwd(), 'public', 'template.png')
+
+    // Composite using sharp
+    const finalBuffer = await sharp(templatePath)
     .composite([
-      { input: qrBuffer, top: 108, left: 239 } 
+      { input: svgOverlay, top: 0, left: 0 },
+      { input: qrBuffer, top: 250, left: 270 } 
     ])
     .png()
     .toBuffer()
