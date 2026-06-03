@@ -19,9 +19,7 @@ export default function ImportPage() {
   const [mapping, setMapping] = useState({
     name: '',
     whatsapp_number: '',
-    student_id: '',
-    roll_no: '',
-    email: ''
+    roll_no: ''
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -67,9 +65,7 @@ export default function ImportPage() {
         setMapping({
           name: find(h => h.includes('name')),
           whatsapp_number: find(h => h.includes('phone') || h.includes('whatsapp') || h.includes('mobile')),
-          student_id: find(h => h.includes('student') && h.includes('id')),
           roll_no: find(h => h.includes('enroll')),
-          email: find(h => h.includes('email')),
         })
 
         setStep('mapping')
@@ -99,16 +95,12 @@ export default function ImportPage() {
     
     const nameIdx = headers.indexOf(mapping.name)
     const phoneIdx = headers.indexOf(mapping.whatsapp_number)
-    const sidIdx = headers.indexOf(mapping.student_id)
     const enrollIdx = headers.indexOf(mapping.roll_no)
-    const emailIdx = headers.indexOf(mapping.email)
 
     const mappedStudents = fileData.map(row => ({
       name: row[nameIdx],
       whatsapp_number: row[phoneIdx],
-      student_id: sidIdx >= 0 ? row[sidIdx] : null,
       roll_no: enrollIdx >= 0 ? row[enrollIdx] : null,
-      email: emailIdx >= 0 ? row[emailIdx] : null,
     })).filter(s => s.name && s.whatsapp_number)
 
     const res = await submitMappedRoster(selectedEventId, mappedStudents)
@@ -192,9 +184,7 @@ export default function ImportPage() {
               {[
                 { key: 'name', label: 'Student Name *' },
                 { key: 'whatsapp_number', label: 'WhatsApp Number *' },
-                { key: 'student_id', label: 'Student ID' },
                 { key: 'roll_no', label: 'Enrollment Number' },
-                { key: 'email', label: 'Email Address' },
               ].map(field => (
                 <div key={field.key}>
                   <label className="block text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">{field.label}</label>
@@ -237,7 +227,6 @@ export default function ImportPage() {
                   <tr>
                     <th className="px-6 py-4 font-bold">Name</th>
                     <th className="px-6 py-4 font-bold">Phone</th>
-                    <th className="px-6 py-4 font-bold">Student ID</th>
                     <th className="px-6 py-4 font-bold">Enrollment</th>
                   </tr>
                 </thead>
@@ -246,7 +235,6 @@ export default function ImportPage() {
                     <tr key={i} className="hover:bg-[var(--color-surface-2)] text-[var(--color-text)]">
                       <td className="px-6 py-4 font-bold">{row[headers.indexOf(mapping.name)] || '-'}</td>
                       <td className="px-6 py-4 font-mono text-xs">{row[headers.indexOf(mapping.whatsapp_number)] || '-'}</td>
-                      <td className="px-6 py-4 font-mono text-xs">{mapping.student_id ? row[headers.indexOf(mapping.student_id)] || '-' : '-'}</td>
                       <td className="px-6 py-4 font-mono text-xs">{mapping.roll_no ? row[headers.indexOf(mapping.roll_no)] || '-' : '-'}</td>
                     </tr>
                   ))}

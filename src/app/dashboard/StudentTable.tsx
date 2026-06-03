@@ -32,7 +32,6 @@ export default function StudentTable({ eventId }: { eventId: string }) {
       const matchesSearch = 
         s.name.toLowerCase().includes(searchLower) || 
         s.whatsapp_number.includes(searchLower) ||
-        (s.student_id && s.student_id.toLowerCase().includes(searchLower)) ||
         (s.roll_no && s.roll_no.toLowerCase().includes(searchLower))
       
       let matchesStatus = true
@@ -46,11 +45,10 @@ export default function StudentTable({ eventId }: { eventId: string }) {
   const handleExportCSV = () => {
     if (filteredStudents.length === 0) return
 
-    const headers = ['Name', 'Phone Number', 'Student ID', 'Enrollment No', 'QR Status', 'Scanned At']
+    const headers = ['Name', 'Phone Number', 'Enrollment No', 'QR Status', 'Scanned At']
     const rows = filteredStudents.map(s => [
       `"${s.name.replace(/"/g, '""')}"`,
       `"${s.whatsapp_number}"`,
-      `"${s.student_id || ''}"`,
       `"${s.roll_no || ''}"`,
       `"${s.qr_status || 'N/A'}"`,
       s.scanned_at ? `"${new Date(s.scanned_at).toLocaleString()}"` : '"Pending"'
@@ -112,7 +110,6 @@ export default function StudentTable({ eventId }: { eventId: string }) {
           <thead className="bg-[#0A0F0D] sticky top-0 uppercase tracking-widest text-[10px] text-[var(--color-muted)] z-10 border-b border-[var(--color-border)]">
             <tr>
               <th className="px-6 py-4 font-bold">Name</th>
-              <th className="px-6 py-4 font-bold">Student ID</th>
               <th className="px-6 py-4 font-bold">Phone</th>
               <th className="px-6 py-4 font-bold">QR Status</th>
               <th className="px-6 py-4 font-bold">Entry Status</th>
@@ -125,7 +122,6 @@ export default function StudentTable({ eventId }: { eventId: string }) {
                 <tr key={i} className="animate-pulse bg-[var(--color-surface)]">
                   <td className="px-6 py-5"><div className="h-4 bg-[var(--color-border)] rounded w-3/4"></div></td>
                   <td className="px-6 py-5"><div className="h-4 bg-[var(--color-border)] rounded w-1/2"></div></td>
-                  <td className="px-6 py-5"><div className="h-4 bg-[var(--color-border)] rounded w-1/2"></div></td>
                   <td className="px-6 py-5"><div className="h-6 bg-[var(--color-border)] rounded-full w-20"></div></td>
                   <td className="px-6 py-5"><div className="h-4 bg-[var(--color-border)] rounded w-16"></div></td>
                   <td className="px-6 py-5"><div className="h-8 bg-[var(--color-border)] rounded-lg w-10 ml-auto"></div></td>
@@ -133,7 +129,7 @@ export default function StudentTable({ eventId }: { eventId: string }) {
               ))
             ) : filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-[var(--color-muted)] font-mono">
+                <td colSpan={5} className="px-6 py-12 text-center text-[var(--color-muted)] font-mono">
                   NO STUDENTS FOUND
                 </td>
               </tr>
@@ -141,7 +137,6 @@ export default function StudentTable({ eventId }: { eventId: string }) {
               filteredStudents.map((s) => (
                 <tr key={s.id} className="hover:bg-[var(--color-surface-2)] transition-colors group">
                   <td className="px-6 py-4 font-semibold">{s.name}</td>
-                  <td className="px-6 py-4 font-mono text-xs text-[var(--color-muted)]">{s.student_id || '-'}</td>
                   <td className="px-6 py-4 font-mono text-xs text-[var(--color-muted)]">{s.whatsapp_number}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${s.qr_status === 'sent' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
@@ -182,7 +177,7 @@ export default function StudentTable({ eventId }: { eventId: string }) {
               <X className="w-5 h-5" />
             </button>
             <h3 className="text-xl font-bold text-center mb-1">{qrModalStudent.name}</h3>
-            <p className="text-sm font-mono text-center text-[var(--color-muted)] mb-6">{qrModalStudent.student_id || qrModalStudent.whatsapp_number}</p>
+            <p className="text-sm font-mono text-center text-[var(--color-muted)] mb-6">{qrModalStudent.whatsapp_number}</p>
             
             <div className="bg-white p-4 rounded-xl mx-auto w-48 h-48 flex items-center justify-center mb-6 overflow-hidden">
               {qrModalStudent.qr_url ? (
