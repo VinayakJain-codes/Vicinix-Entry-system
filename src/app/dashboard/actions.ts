@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/server'
 import { Tables } from '@/types/database.types'
 
 const getAdminClient = () => createAdminClient(
@@ -78,6 +79,51 @@ export async function deleteEvent(eventId: string) {
   if (error) {
     console.error('Error deleting event:', error)
     return { error: 'Failed to delete event' }
+  }
+
+  return { success: true }
+}
+
+export async function updateStudent(
+  studentId: string,
+  name: string,
+  whatsappNumber: string,
+  rollNo?: string | null
+) {
+  const supabase = await createClient()
+
+  // Verify user is admin
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const adminClient = getAdminClient()
+  const { data: roleData } = await adminClient
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!roleData || !['admin', 'super_admin'].includes(roleData.role)) {
+    return { error: 'Unauthorized role' }
+  }
+
+  const cleanedPhone = whatsappNumber.replace(/\D/g, '')
+  if (!cleanedPhone) {
+    return { error: 'Invalid WhatsApp number' }
+  }
+
+  const { error } = await adminClient
+    .from('students')
+    .update({
+      name: name.trim(),
+      whatsapp_number: cleanedPhone,
+      roll_no: rollNo ? rollNo.trim() : null
+    })
+    .eq('id', studentId)
+
+  if (error) {
+    console.error('Error updating student:', error)
+    return { error: error.message }
   }
 
   return { success: true }

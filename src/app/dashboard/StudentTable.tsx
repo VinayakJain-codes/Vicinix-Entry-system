@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { getStudents } from './actions'
+import { getStudents, updateStudent } from './actions'
 import { Tables } from '@/types/database.types'
-import { QrCode, Search, Download, X } from 'lucide-react'
+import { QrCode, Search, Download, X, Edit2, Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 type Student = Tables<'students'>
 
@@ -13,6 +14,57 @@ export default function StudentTable({ eventId }: { eventId: string }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'entered' | 'pending'>('all')
   const [qrModalStudent, setQrModalStudent] = useState<Student | null>(null)
+  const [editModalStudent, setEditModalStudent] = useState<Student | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', whatsapp_number: '', roll_no: '' })
+  const [saving, setSaving] = useState(false)
+
+  const handleEditClick = (student: Student) => {
+    setEditModalStudent(student)
+    setEditForm({
+      name: student.name || '',
+      whatsapp_number: student.whatsapp_number || '',
+      roll_no: student.roll_no || ''
+    })
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editModalStudent) return
+
+    setSaving(true)
+    try {
+      const res = await updateStudent(
+        editModalStudent.id,
+        editForm.name,
+        editForm.whatsapp_number,
+        editForm.roll_no
+      )
+
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success('Student details updated successfully')
+        
+        // Update local state
+        setStudents(prev => prev.map(s => 
+          s.id === editModalStudent.id 
+            ? { 
+                ...s, 
+                name: editForm.name.trim(), 
+                whatsapp_number: editForm.whatsapp_number.replace(/\D/g, ''),
+                roll_no: editForm.roll_no ? editForm.roll_no.trim() : null
+              } 
+            : s
+        ))
+        
+        setEditModalStudent(null)
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update student details')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   useEffect(() => {
     if (!eventId) return
@@ -150,7 +202,14 @@ export default function StudentTable({ eventId }: { eventId: string }) {
                       <span className="text-[var(--color-muted)] font-medium text-xs uppercase tracking-wider">Pending</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right flex justify-end gap-2">
+                    <button 
+                      onClick={() => handleEditClick(s)}
+                      className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100"
+                      title="Edit Student"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
                     <button 
                       onClick={() => setQrModalStudent(s)}
                       className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100"
@@ -192,6 +251,79 @@ export default function StudentTable({ eventId }: { eventId: string }) {
                 {qrModalStudent.qr_status || 'Generated'}
               </span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Student Modal */}
+      {editModalStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 w-full max-w-md shadow-[0_0_50px_rgba(19,236,91,0.1)] relative">
+            <button 
+              onClick={() => {
+                setEditModalStudent(null)
+                setEditForm({ name: '', whatsapp_number: '', roll_no: '' })
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-[var(--color-surface-2)] hover:text-white transition-colors text-[var(--color-muted)]"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-bold mb-6 uppercase tracking-widest text-[var(--color-text)]">Edit Student Details</h3>
+            
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Name</label>
+                <input 
+                  type="text" 
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  className="w-full bg-[#0A0F0D] border border-[var(--color-border)] rounded-xl px-4 py-3 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-marketnera)] transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">WhatsApp Number</label>
+                <input 
+                  type="text" 
+                  value={editForm.whatsapp_number}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, whatsapp_number: e.target.value }))}
+                  required
+                  className="w-full bg-[#0A0F0D] border border-[var(--color-border)] rounded-xl px-4 py-3 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-marketnera)] transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Enrollment No (Roll No)</label>
+                <input 
+                  type="text" 
+                  value={editForm.roll_no}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, roll_no: e.target.value }))}
+                  className="w-full bg-[#0A0F0D] border border-[var(--color-border)] rounded-xl px-4 py-3 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-marketnera)] transition-colors"
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4 border-t border-[var(--color-border)]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditModalStudent(null)
+                    setEditForm({ name: '', whatsapp_number: '', roll_no: '' })
+                  }}
+                  className="flex-1 px-4 py-3 bg-[var(--color-surface-2)] border border-[var(--color-border)] text-white font-bold rounded-xl hover:bg-[var(--color-border)] transition-colors text-center text-sm"
+                >
+                  Cancel
+                </button>
+                
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 flex justify-center items-center gap-2 px-4 py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-colors disabled:opacity-50 text-sm"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

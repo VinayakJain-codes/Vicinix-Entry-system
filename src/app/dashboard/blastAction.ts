@@ -107,7 +107,7 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
     } catch (e) {
       const { error: studentError } = await adminClient
       .from('students')
-      .update({ qr_status: 'failed' })
+      .update({ qr_status: 'error' })
       .eq('id', student.id)
       errors++
     }
