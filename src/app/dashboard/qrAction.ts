@@ -5,6 +5,8 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 import qrcode from 'qrcode'
 import sharp from 'sharp'
+import path from 'path'
+import fs from 'fs'
 
 export async function generateQRsForEvent(eventId: string, batchSize: number = 50) {
   const supabase = await createClient()
@@ -41,12 +43,25 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
   let processed = 0
   const eventName = event.name || 'Special Event'
   const eventDate = event.date ? new Date(event.date).toLocaleDateString() : 'TBA'
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://marketnera.com'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://entrysystem.vicinix.co.in'
 
-  // Fetch template once per batch (works on Vercel where public/ isn't on serverless filesystem)
-  const templateRes = await fetch(`${appUrl}/template.png`)
-  if (!templateRes.ok) throw new Error('Failed to fetch template image')
-  const templateBuffer = Buffer.from(await templateRes.arrayBuffer())
+  // Load template image - try filesystem first, fall back to HTTP fetch
+  let templateBuffer: Buffer
+  const templatePath = path.join(process.cwd(), 'public', 'template.png')
+  
+  if (fs.existsSync(templatePath)) {
+    // Works locally and when outputFileTracingIncludes bundles the file
+    templateBuffer = fs.readFileSync(templatePath)
+  } else {
+    // Fallback for Vercel: fetch via HTTP using VERCEL_URL (auto-set by Vercel)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'https://marketnera.com'
+    const templateRes = await fetch(`${baseUrl}/template.png`)
+    if (!templateRes.ok) throw new Error(`Failed to fetch template image from ${baseUrl}/template.png`)
+    templateBuffer = Buffer.from(await templateRes.arrayBuffer())
+  }
+
 
   for (const student of students) {
     const token = crypto.randomBytes(32).toString('hex')
