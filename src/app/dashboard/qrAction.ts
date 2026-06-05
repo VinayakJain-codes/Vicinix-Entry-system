@@ -54,9 +54,7 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
       templateBuffer = fs.readFileSync(templatePath)
     } else {
       // Fallback for Vercel: fetch via HTTP using VERCEL_URL (auto-set by Vercel)
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
-        || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-        || 'https://entrysystem.vicinix.co.in'
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://entrysystem.vicinix.co.in'
       console.log('[QR] Template not on filesystem, fetching from:', `${baseUrl}/template.png`)
       const templateRes = await fetch(`${baseUrl}/template.png`)
       if (!templateRes.ok) {
