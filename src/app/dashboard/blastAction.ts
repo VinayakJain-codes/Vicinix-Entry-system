@@ -63,7 +63,7 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
         type: 'template',
         template: {
           name: templateName,
-          language: { code: 'en_US' },
+          language: { code: 'en' },
           components: [
             {
               type: 'header',
@@ -77,7 +77,7 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
             {
               type: 'body',
               parameters: [
-                { type: 'text', text: student.name }
+                { type: 'text', parameter_name: 'student_name', text: student.name }
               ]
             }
           ]

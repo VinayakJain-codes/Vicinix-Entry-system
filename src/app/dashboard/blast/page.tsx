@@ -46,6 +46,12 @@ export default function BlastPage() {
         currentRemaining = result.remaining || 0
         // Refresh stats mid-flight
         getDeliveryStats(selectedEventId).then(setStats)
+
+        // Break if we are making no progress (everything in the batch failed)
+        if (result.processed === 0 && result.errors > 0) {
+          toast.error('Some messages failed to send. Check configuration or numbers and try again.')
+          break
+        }
       }
       toast.success('WhatsApp blast completed.')
     } catch (e: any) {
