@@ -5,8 +5,6 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 import qrcode from 'qrcode'
 import sharp from 'sharp'
-import path from 'path'
-import fs from 'fs'
 
 export async function generateQRsForEvent(eventId: string, batchSize: number = 50) {
   const supabase = await createClient()
@@ -45,6 +43,11 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
   const eventDate = event.date ? new Date(event.date).toLocaleDateString() : 'TBA'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://marketnera.com'
 
+  // Fetch template once per batch (works on Vercel where public/ isn't on serverless filesystem)
+  const templateRes = await fetch(`${appUrl}/template.png`)
+  if (!templateRes.ok) throw new Error('Failed to fetch template image')
+  const templateBuffer = Buffer.from(await templateRes.arrayBuffer())
+
   for (const student of students) {
     const token = crypto.randomBytes(32).toString('hex')
     const fullUrl = `${appUrl}/scan?token=${token}`
@@ -60,10 +63,10 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
 </svg>
     `)
 
-    const templatePath = path.join(process.cwd(), 'public', 'template.png')
+
 
     // Composite using sharp
-    const finalBuffer = await sharp(templatePath)
+    const finalBuffer = await sharp(templateBuffer)
     .composite([
       { input: svgOverlay, top: 0, left: 0 },
       { input: qrBuffer, top: 310, left: 270 } 
