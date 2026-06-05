@@ -86,7 +86,7 @@ export default function MasterQRPage() {
     window.print()
   }
 
-  const scanUrl = qrToken ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://marketnera.com'}/scan?token=${qrToken}` : ''
+  const scanUrl = qrToken ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://entrysystem.vicinix.co.in'}/scan?token=${qrToken}` : ''
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8">
