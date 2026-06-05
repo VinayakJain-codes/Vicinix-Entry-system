@@ -63,53 +63,62 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
       templateBuffer = Buffer.from(await templateRes.arrayBuffer())
     }
 
-    for (const student of students) {
-      const token = crypto.randomBytes(32).toString('hex')
-      const fullUrl = `${appUrl}/scan?token=${token}`
-      
-      // Generate QR matrix
-      const qrBuffer = await qrcode.toBuffer(fullUrl, { type: 'png', width: 540, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
-      
-      const svgOverlay = Buffer.from(`
+    const promises = students.map(async (student) => {
+      try {
+        const token = crypto.randomBytes(32).toString('hex')
+        const fullUrl = `${appUrl}/scan?token=${token}`
+        
+        // Generate QR matrix
+        const qrBuffer = await qrcode.toBuffer(fullUrl, { type: 'png', width: 540, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+        
+        const svgOverlay = Buffer.from(`
 <svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg">
   <text x="50" y="90" font-family="sans-serif" font-size="52" font-weight="bold" fill="#000000" text-anchor="start">${eventName}</text>
   <text x="1030" y="65" font-family="sans-serif" font-size="52" font-weight="bold" fill="#000000" text-anchor="end">${student.name}</text>
   <text x="1030" y="125" font-family="sans-serif" font-size="40" font-weight="bold" fill="#000000" text-anchor="end">ENR: ${student.roll_no || 'N/A'}</text>
 </svg>
-      `)
+        `)
 
-      // Composite using sharp
-      const finalBuffer = await sharp(templateBuffer)
-      .composite([
-        { input: svgOverlay, top: 0, left: 0 },
-        { input: qrBuffer, top: 310, left: 270 } 
-      ])
-      .png()
-      .toBuffer()
-      
-      const fileName = `${eventId}/${student.id}.png`
-      
-      // Upload to storage
-      const { error: uploadError } = await adminClient.storage
-        .from('qrs')
-        .upload(fileName, finalBuffer, { contentType: 'image/png', upsert: true })
+        // Composite using sharp
+        const finalBuffer = await sharp(templateBuffer)
+        .composite([
+          { input: svgOverlay, top: 0, left: 0 },
+          { input: qrBuffer, top: 310, left: 270 } 
+        ])
+        .png()
+        .toBuffer()
+        
+        const fileName = `${eventId}/${student.id}.png`
+        
+        // Upload to storage
+        const { error: uploadError } = await adminClient.storage
+          .from('qrs')
+          .upload(fileName, finalBuffer, { contentType: 'image/png', upsert: true })
 
-      if (uploadError) {
-        console.error('Failed to upload QR for', student.id, uploadError)
-        continue
+        if (uploadError) {
+          console.error('Failed to upload QR for', student.id, uploadError)
+          return { success: false }
+        }
+
+        const { data: publicUrlData } = adminClient.storage.from('qrs').getPublicUrl(fileName)
+
+        const { error: updateError } = await adminClient
+          .from('students')
+          .update({ token: token, qr_url: publicUrlData.publicUrl, qr_status: 'generated' })
+          .eq('id', student.id)
+
+        if (!updateError) {
+          return { success: true }
+        }
+        return { success: false }
+      } catch (err) {
+        console.error('Error generating QR for student', student.id, err)
+        return { success: false }
       }
+    })
 
-      const { data: publicUrlData } = adminClient.storage.from('qrs').getPublicUrl(fileName)
-
-      const { error: updateError } = await adminClient
-        .from('students')
-        .update({ token: token, qr_url: publicUrlData.publicUrl, qr_status: 'generated' })
-        .eq('id', student.id)
-
-      if (!updateError) {
-        processed++
-      }
-    }
+    const results = await Promise.all(promises)
+    processed = results.filter(r => r.success).length
 
     // Check remaining
     const { count } = await supabase

@@ -50,11 +50,13 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
   let processed = 0
   let errors = 0
 
-  for (const student of students) {
+  const promises = students.map(async (student, index) => {
     if (!student.qr_url) {
-      errors++
-      continue
+      return { id: student.id, success: false }
     }
+
+    // Stagger slightly to strictly obey the WhatsApp rate limit (80/sec) while keeping the execution massively parallel.
+    await delay(index * 15)
 
     try {
       const payload = {
@@ -67,18 +69,11 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
           components: [
             {
               type: 'header',
-              parameters: [
-                {
-                  type: 'image',
-                  image: { link: student.qr_url }
-                }
-              ]
+              parameters: [{ type: 'image', image: { link: student.qr_url } }]
             },
             {
               type: 'body',
-              parameters: [
-                { type: 'text', parameter_name: 'student_name', text: student.name }
-              ]
+              parameters: [{ type: 'text', parameter_name: 'student_name', text: student.name }]
             }
           ]
         }
@@ -94,26 +89,30 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
       })
 
       if (res.ok) {
-        await adminClient
-        .from('students')
-        .update({ qr_status: 'sent' })
-        .eq('id', student.id)
-        processed++
+        return { id: student.id, success: true }
       } else {
         console.error('WhatsApp API Error:', await res.text())
-        await adminClient.from('students').update({ qr_status: 'error' }).eq('id', student.id)
-        errors++
+        return { id: student.id, success: false }
       }
     } catch (e) {
-      const { error: studentError } = await adminClient
-      .from('students')
-      .update({ qr_status: 'error' })
-      .eq('id', student.id)
-      errors++
+      return { id: student.id, success: false }
     }
+  })
 
-    // Enforce 15ms delay for rate limit compliance (Meta max 80/sec)
-    await delay(15)
+  const results = await Promise.all(promises)
+
+  const successIds = results.filter(r => r.success).map(r => r.id)
+  const errorIds = results.filter(r => !r.success).map(r => r.id)
+
+  // Bulk update DB - massively faster than individual row updates
+  if (successIds.length > 0) {
+    await adminClient.from('students').update({ qr_status: 'sent' }).in('id', successIds)
+    processed = successIds.length
+  }
+  
+  if (errorIds.length > 0) {
+    await adminClient.from('students').update({ qr_status: 'error' }).in('id', errorIds)
+    errors = errorIds.length
   }
 
   // Check remaining

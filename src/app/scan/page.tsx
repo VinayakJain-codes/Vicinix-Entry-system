@@ -15,7 +15,6 @@ type ScanResult = {
 export default function ScanPage() {
   const [scanResult, setScanResult] = useState<ScanResult>({ status: 'scanning' })
   const [guardEmail, setGuardEmail] = useState<string>('')
-  const [gate, setGate] = useState('Gate A')
   const [sessionScans, setSessionScans] = useState(0)
   
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -48,7 +47,7 @@ export default function ScanPage() {
       const res = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: decodedText, gate_label: gate }) // pass gate label
+        body: JSON.stringify({ token: decodedText })
       })
       const data = await res.json()
 
@@ -105,17 +104,6 @@ export default function ScanPage() {
             {guardEmail || 'Authenticating...'}
           </div>
         </div>
-        
-        <select 
-          value={gate}
-          onChange={(e) => setGate(e.target.value)}
-          className="bg-[#111918] border border-[#1F2D28] text-sm font-bold px-3 py-1.5 rounded-lg focus:outline-none focus:border-[#13EC5B] appearance-none text-right"
-        >
-          <option value="Gate A">Gate A</option>
-          <option value="Gate B">Gate B</option>
-          <option value="Main Gate">Main Gate</option>
-          <option value="VIP">VIP</option>
-        </select>
       </div>
 
       {/* Main Scan Area */}
