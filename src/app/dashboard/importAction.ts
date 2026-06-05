@@ -66,7 +66,12 @@ export async function importRoster(formData: FormData) {
     }
 
     // Clean phone number (remove non-digits)
-    const phone = String(rawPhone).replace(/\D/g, '')
+    let phone = String(rawPhone).replace(/\D/g, '')
+
+    // Automatically prepend '91' for standard 10-digit Indian numbers without country code
+    if (phone.length === 10) {
+      phone = '91' + phone
+    }
 
     if (seenPhones.has(phone)) {
       skipped++
