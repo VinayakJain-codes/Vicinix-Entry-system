@@ -80,9 +80,11 @@ export default function ScanPage() {
     if (['success', 'master', 'invalid', 'duplicate'].includes(scanResult.status)) {
       if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
       
+      const delay = (scanResult.status === 'invalid' || scanResult.status === 'duplicate') ? 3000 : 1200;
+
       resetTimerRef.current = setTimeout(() => {
         setScanResult({ status: 'scanning' })
-      }, 2500)
+      }, delay)
     }
 
     return () => {
@@ -114,7 +116,7 @@ export default function ScanPage() {
               <Scanner 
                 onScan={(result) => handleScan(result[0].rawValue)}
                 allowMultiple={true}
-                scanDelay={2000}
+                scanDelay={300}
               />
             </div>
           </div>

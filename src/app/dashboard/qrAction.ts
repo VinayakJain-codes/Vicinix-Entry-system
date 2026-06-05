@@ -73,9 +73,14 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
         
         const svgOverlay = Buffer.from(`
 <svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg">
-  <text x="50" y="90" font-family="sans-serif" font-size="52" font-weight="bold" fill="#000000" text-anchor="start">${eventName}</text>
-  <text x="1030" y="65" font-family="sans-serif" font-size="52" font-weight="bold" fill="#000000" text-anchor="end">${student.name}</text>
-  <text x="1030" y="125" font-family="sans-serif" font-size="40" font-weight="bold" fill="#000000" text-anchor="end">ENR: ${student.roll_no || 'N/A'}</text>
+  <style>
+    .title { font: bold 52px Arial, sans-serif; fill: #000000; }
+    .subtitle { font: bold 40px Arial, sans-serif; fill: #000000; }
+  </style>
+  <text x="50" y="90" class="title" text-anchor="start">${eventName}</text>
+  <text x="50" y="150" class="subtitle" text-anchor="start">${eventDate}</text>
+  <text x="1030" y="90" class="title" text-anchor="end">${student.name}</text>
+  <text x="1030" y="150" class="subtitle" text-anchor="end">ENR: ${student.roll_no || 'N/A'}</text>
 </svg>
         `)
 

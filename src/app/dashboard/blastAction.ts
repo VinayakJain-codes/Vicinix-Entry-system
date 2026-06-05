@@ -91,7 +91,11 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
       if (res.ok) {
         return { id: student.id, success: true }
       } else {
-        console.error('WhatsApp API Error:', await res.text())
+        const errorText = await res.text()
+        console.error('=== WhatsApp API Error ===')
+        console.error('Payload Sent:', JSON.stringify(payload, null, 2))
+        console.error('Response Error:', errorText)
+        console.error('==========================')
         return { id: student.id, success: false }
       }
     } catch (e) {
