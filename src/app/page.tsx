@@ -30,8 +30,16 @@ export default function Home() {
           href="/login" 
           className="w-full flex justify-between items-center py-4 px-6 rounded-xl text-lg font-bold text-black bg-[var(--color-marketnera)] hover:bg-[var(--color-marketnera-dark)] transition-all shadow-[0_0_20px_rgba(19,236,91,0.2)] hover:shadow-[0_0_30px_rgba(19,236,91,0.4)] active:scale-[0.98]"
         >
-          <span>Sign In</span>
+          <span>Staff Login</span>
           <ArrowRight className="w-5 h-5" />
+        </Link>
+
+        <Link 
+          href="/student/login" 
+          className="w-full flex justify-between items-center py-4 px-6 mt-4 rounded-xl text-lg font-bold text-[var(--color-text)] bg-white/5 border border-white/10 hover:bg-white/10 transition-all active:scale-[0.98]"
+        >
+          <span>Student Access</span>
+          <ArrowRight className="w-5 h-5 text-[var(--color-marketnera)]" />
         </Link>
         
         {/* Footer Branding */}
