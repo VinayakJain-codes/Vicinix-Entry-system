@@ -66,7 +66,7 @@ export default function StudentLoginPage() {
               href="https://marketnera.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hover:underline hover:underline-offset-8 decoration-2 decoration-[var(--color-marketnera)] transition-all"
+              className="underline underline-offset-8 decoration-2 decoration-[var(--color-marketnera)]/40 hover:decoration-[var(--color-marketnera)] transition-all"
             >
               MARKETNERA
             </a>
@@ -133,7 +133,7 @@ export default function StudentLoginPage() {
             href="https://vicinix.co.in"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block text-xs font-bold tracking-[0.2em] text-[var(--color-vicinix)] opacity-85 hover:opacity-100 hover:underline hover:underline-offset-4 decoration-1 decoration-[var(--color-vicinix)] hover:scale-[1.02] transition-all uppercase"
+            className="inline-block text-xs font-bold tracking-[0.2em] text-[var(--color-vicinix)] opacity-85 hover:opacity-100 underline underline-offset-4 decoration-1 decoration-[var(--color-vicinix)]/40 hover:decoration-[var(--color-vicinix)] hover:scale-[1.02] transition-all uppercase"
           >
             Built by Vicinix
           </a>
