@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { studentLogin } from './actions'
-import { Loader2, ArrowLeft, KeyRound, Info } from 'lucide-react'
+import { Loader2, ArrowLeft, LogIn } from 'lucide-react'
 import Link from 'next/link'
 
 export default function StudentLoginPage() {
@@ -18,16 +18,15 @@ export default function StudentLoginPage() {
 
     const formData = new FormData(e.currentTarget)
     const rollNo = formData.get('rollNo') as string
-    const password = formData.get('password') as string
 
-    if (!rollNo || !password) {
-      setError('Please fill in both fields')
+    if (!rollNo) {
+      setError('Please enter your enrollment number')
       setLoading(false)
       return
     }
 
     try {
-      const result = await studentLogin(rollNo, password)
+      const result = await studentLogin(rollNo)
       
       if (result.error) {
         setError(result.error)
@@ -95,22 +94,6 @@ export default function StudentLoginPage() {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-[var(--color-text)]">
-                Password
-              </label>
-              <div className="mt-2">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="block w-full appearance-none rounded-xl border border-[var(--color-border)] px-4 py-3 placeholder-[var(--color-muted)] shadow-sm focus:border-[var(--color-marketnera)] focus:outline-none focus:ring-1 focus:ring-[var(--color-marketnera)] sm:text-sm bg-[#0A0F0D] text-[var(--color-text)] transition-colors"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
             <div className="pt-2">
               <button
                 type="submit"
@@ -123,35 +106,14 @@ export default function StudentLoginPage() {
                   </>
                 ) : (
                   <>
-                    <KeyRound className="w-4 h-4" /> View My QR
+                    <LogIn className="w-4 h-4" /> View My QR
                   </>
                 )}
               </button>
             </div>
           </form>
 
-          {/* Password Hint Card */}
-          <div className="mt-8 pt-6 border-t border-[var(--color-border)]">
-            <div className="rounded-xl bg-white/5 border border-white/10 p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--color-vicinix)]/5 rounded-full blur-xl"></div>
-              <div className="flex gap-3">
-                <Info className="w-5 h-5 text-[var(--color-vicinix)] shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--color-vicinix)]">
-                    Password Hint
-                  </h4>
-                  <p className="text-xs text-[var(--color-text)] leading-relaxed">
-                    Your password is your <strong className="text-[var(--color-marketnera)] font-bold">first name</strong> in lowercase, followed by <strong className="text-[var(--color-vicinix)] font-bold">@</strong>, and then the <strong className="text-[var(--color-marketnera)] font-bold">last 3 digits</strong> of your enrollment number (everything in lowercase, alphanumeric only).
-                  </p>
-                  <div className="mt-2 p-2 bg-[#0A0F0D] rounded border border-[var(--color-border)] text-[10px] font-mono text-[var(--color-muted)]">
-                    <span className="text-[var(--color-text)]">Name:</span> John Doe<br />
-                    <span className="text-[var(--color-text)]">Enrollment:</span> 0901CS201<strong className="text-[var(--color-vicinix)] font-bold">132</strong><br />
-                    <span className="text-[var(--color-text)]">Password:</span> <strong className="text-[var(--color-marketnera)]">john</strong>@<strong className="text-[var(--color-vicinix)]">132</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+
         </div>
         
         <div className="mt-8 text-center">

@@ -9,13 +9,12 @@ const getAdminClient = () => createAdminClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function studentLogin(rollNo: string, passwordInput: string) {
-  if (!rollNo || !passwordInput) {
-    return { error: 'Please enter both enrollment number and password' }
+export async function studentLogin(rollNo: string) {
+  if (!rollNo) {
+    return { error: 'Please enter your enrollment number' }
   }
 
   const trimmedRollNo = rollNo.trim()
-  const trimmedPassword = passwordInput.trim().toLowerCase()
 
   try {
     const adminClient = getAdminClient()
@@ -32,30 +31,13 @@ export async function studentLogin(rollNo: string, passwordInput: string) {
     }
 
     if (!students || students.length === 0) {
-      return { error: 'Invalid enrollment number or password' }
+      return { error: 'Invalid enrollment number' }
     }
 
-    // Verify password for the first matching student record
+    // Verify the first matching student record
     const student = students[0]
     if (!student.name || !student.roll_no) {
       return { error: 'Student record is incomplete' }
-    }
-
-    // 1. Get first name (lowercase, alphanumeric only)
-    const firstName = student.name
-      .trim()
-      .split(/\s+/)[0]
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-
-    // 2. Get last 3 characters of roll number
-    const rollNoStr = student.roll_no.trim()
-    const lastThree = rollNoStr.slice(-3).toLowerCase()
-
-    const expectedPassword = `${firstName}@${lastThree}`
-
-    if (trimmedPassword !== expectedPassword) {
-      return { error: 'Invalid enrollment number or password' }
     }
 
     // 3. Set the signed session cookie
