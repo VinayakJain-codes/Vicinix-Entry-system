@@ -16,10 +16,30 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://entrysystem.vicinix.co.in'),
   title: { template: '%s | Marketnera Entry', default: 'Marketnera Entry' },
   description: 'Real-time QR entry management by Marketnera × Vicinix',
   manifest: '/manifest.json',
-  icons: { icon: '/icon-192.png', apple: '/icon-192.png' }, // using same icon for now
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/Marketneraxvicinix.png',
+  },
+  openGraph: {
+    title: 'Marketnera Entry',
+    description: 'Real-time QR entry management by Marketnera × Vicinix',
+    url: 'https://entrysystem.vicinix.co.in',
+    siteName: 'Marketnera Entry',
+    images: [
+      {
+        url: '/Marketneraxvicinix.png',
+        width: 1200,
+        height: 630,
+        alt: 'Marketnera × Vicinix Entry System Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
 };
 
 export const viewport: Viewport = {
