@@ -50,13 +50,16 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
   let processed = 0
   let errors = 0
 
-  const promises = students.map(async (student, index) => {
+  const results = []
+  
+  for (const student of students) {
     if (!student.qr_url) {
-      return { id: student.id, success: false }
+      results.push({ id: student.id, success: false })
+      continue
     }
 
-    // Stagger slightly to strictly obey the WhatsApp rate limit (80/sec) while keeping the execution massively parallel.
-    await delay(index * 15)
+    // Small sequential delay to avoid spam flags and rate limits
+    await delay(100)
 
     try {
       const payload = {
@@ -89,21 +92,19 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
       })
 
       if (res.ok) {
-        return { id: student.id, success: true }
+        results.push({ id: student.id, success: true })
       } else {
         const errorText = await res.text()
         console.error('=== WhatsApp API Error ===')
         console.error('Payload Sent:', JSON.stringify(payload, null, 2))
         console.error('Response Error:', errorText)
         console.error('==========================')
-        return { id: student.id, success: false }
+        results.push({ id: student.id, success: false })
       }
     } catch (e) {
-      return { id: student.id, success: false }
+      results.push({ id: student.id, success: false })
     }
-  })
-
-  const results = await Promise.all(promises)
+  }
 
   const successIds = results.filter(r => r.success).map(r => r.id)
   const errorIds = results.filter(r => !r.success).map(r => r.id)

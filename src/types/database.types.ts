@@ -91,6 +91,7 @@ export type Database = {
       }
       students: {
         Row: {
+          created_at: string | null
           email: string | null
           roll_no: string | null
           event_id: string | null
@@ -104,6 +105,7 @@ export type Database = {
           token: string | null
         }
         Insert: {
+          created_at?: string | null
           email?: string | null
           roll_no?: string | null
           event_id?: string | null
@@ -117,6 +119,7 @@ export type Database = {
           token?: string | null
         }
         Update: {
+          created_at?: string | null
           email?: string | null
           roll_no?: string | null
           event_id?: string | null

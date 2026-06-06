@@ -16,7 +16,6 @@ async function test() {
   
   const svgOverlay = Buffer.from(`
 <svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg">
-  <text x="50" y="90" font-family="Arial" font-size="52" font-weight="900" fill="#000000" text-anchor="start">${eventName}</text>
   <text x="1030" y="65" font-family="Arial" font-size="52" font-weight="900" fill="#000000" text-anchor="end">${studentName}</text>
   <text x="1030" y="125" font-family="Arial" font-size="40" font-weight="700" fill="#000000" text-anchor="end">${rollNo}</text>
 </svg>

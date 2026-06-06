@@ -77,8 +77,6 @@ export async function generateQRsForEvent(eventId: string, batchSize: number = 5
     .title { font: bold 52px Arial, sans-serif; fill: #000000; }
     .subtitle { font: bold 40px Arial, sans-serif; fill: #000000; }
   </style>
-  <text x="50" y="90" class="title" text-anchor="start">${eventName}</text>
-  <text x="50" y="150" class="subtitle" text-anchor="start">${eventDate}</text>
   <text x="1030" y="90" class="title" text-anchor="end">${student.name}</text>
   <text x="1030" y="150" class="subtitle" text-anchor="end">ENR: ${student.roll_no || 'N/A'}</text>
 </svg>

@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { getStudents, updateStudent } from './actions'
+import { getStudents, updateStudent, resendStudentQR } from './actions'
 import { Tables } from '@/types/database.types'
-import { QrCode, Search, Download, X, Edit2, Loader2 } from 'lucide-react'
+import { QrCode, Search, Download, X, Edit2, Loader2, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 type Student = Tables<'students'>
@@ -17,6 +17,30 @@ export default function StudentTable({ eventId }: { eventId: string }) {
   const [editModalStudent, setEditModalStudent] = useState<Student | null>(null)
   const [editForm, setEditForm] = useState({ name: '', whatsapp_number: '', roll_no: '' })
   const [saving, setSaving] = useState(false)
+  const [resendingId, setResendingId] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<'name' | 'uploaded'>('name')
+
+  const handleResend = async (student: Student) => {
+    if (resendingId) return
+    setResendingId(student.id)
+    try {
+      const res = await resendStudentQR(student.id)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success(`QR code sent to ${student.name} successfully`)
+        setStudents(prev => prev.map(s => 
+          s.id === student.id 
+            ? { ...s, qr_status: res.qr_status || 'sent', qr_url: res.qr_url || s.qr_url } 
+            : s
+        ))
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to resend QR code')
+    } finally {
+      setResendingId(null)
+    }
+  }
 
   const handleEditClick = (student: Student) => {
     setEditModalStudent(student)
@@ -79,7 +103,7 @@ export default function StudentTable({ eventId }: { eventId: string }) {
   }, [eventId])
 
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
+    const filtered = students.filter((s) => {
       const searchLower = search.toLowerCase()
       const matchesSearch = 
         s.name.toLowerCase().includes(searchLower) || 
@@ -92,7 +116,17 @@ export default function StudentTable({ eventId }: { eventId: string }) {
 
       return matchesSearch && matchesStatus
     })
-  }, [students, search, statusFilter])
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'uploaded') {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+        return dateA - dateB
+      } else {
+        return a.name.localeCompare(b.name)
+      }
+    })
+  }, [students, search, statusFilter, sortBy])
 
   const handleExportCSV = () => {
     if (filteredStudents.length === 0) return
@@ -144,6 +178,15 @@ export default function StudentTable({ eventId }: { eventId: string }) {
             <option value="all">All Status</option>
             <option value="entered">Entered</option>
             <option value="pending">Pending</option>
+          </select>
+
+          <select 
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="px-3 py-2 border border-[var(--color-border)] rounded-xl bg-[#0A0F0D] text-sm focus:outline-none focus:border-[var(--color-marketnera)] text-[var(--color-text)] transition-colors appearance-none"
+          >
+            <option value="name">Sort by Name</option>
+            <option value="uploaded">Sort by Upload Order</option>
           </select>
 
           <button 
@@ -203,6 +246,18 @@ export default function StudentTable({ eventId }: { eventId: string }) {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right flex justify-end gap-2">
+                    <button 
+                      onClick={() => handleResend(s)}
+                      disabled={resendingId !== null}
+                      className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Resend QR Code"
+                    >
+                      {resendingId === s.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[var(--color-marketnera)]" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </button>
                     <button 
                       onClick={() => handleEditClick(s)}
                       className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100"

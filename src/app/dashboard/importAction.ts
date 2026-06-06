@@ -50,6 +50,7 @@ export async function importRoster(formData: FormData) {
   // 3. Process & Deduplicate
   const studentsToInsert = []
   const seenPhones = new Set()
+  const uploadTime = new Date()
 
   let imported = 0
   let skipped = 0
@@ -90,6 +91,7 @@ export async function importRoster(formData: FormData) {
       student_id: studentId,
       roll_no: enrollmentNo,
       email: email,
+      created_at: new Date(uploadTime.getTime() + i).toISOString(),
     })
   }
 
