@@ -56,8 +56,15 @@ export default function StudentLoginPage() {
         </Link>
         
         <div className="flex flex-col items-center">
-          <h2 className="text-center text-3xl font-black tracking-tight text-[var(--color-marketnera)] uppercase">
-            MARKETNERA
+          <img
+            src="/Marketneraxvicinix.png"
+            alt="Marketnera x Vicinix Logo"
+            className="w-48 h-auto object-contain mb-4 rounded-xl"
+          />
+          <h2 className="text-center text-3xl font-black tracking-tight text-[var(--color-marketnera)] uppercase hover:text-[var(--color-marketnera-dark)] transition-colors">
+            <a href="https://marketnera.com" target="_blank" rel="noopener noreferrer">
+              MARKETNERA
+            </a>
           </h2>
           <p className="mt-2 text-center text-sm text-[var(--color-text)] font-semibold uppercase tracking-[0.15em] opacity-80">
             Student Portal
@@ -117,9 +124,14 @@ export default function StudentLoginPage() {
         </div>
         
         <div className="mt-8 text-center">
-          <p className="text-[10px] font-bold tracking-[0.2em] text-[var(--color-vicinix)] opacity-50 uppercase">
+          <a
+            href="https://vicinix.co.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-xs font-bold tracking-[0.2em] text-[var(--color-vicinix)] opacity-85 hover:opacity-100 hover:scale-[1.02] transition-all uppercase"
+          >
             Built by Vicinix
-          </p>
+          </a>
         </div>
       </div>
     </div>
