@@ -61,8 +61,13 @@ export default function StudentLoginPage() {
             alt="Marketnera x Vicinix Logo"
             className="w-48 h-auto object-contain mb-4 rounded-xl"
           />
-          <h2 className="text-center text-3xl font-black tracking-tight text-[var(--color-marketnera)] uppercase hover:text-[var(--color-marketnera-dark)] transition-colors">
-            <a href="https://marketnera.com" target="_blank" rel="noopener noreferrer">
+          <h2 className="text-center text-3xl font-black tracking-tight text-[var(--color-marketnera)] uppercase">
+            <a 
+              href="https://marketnera.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:underline hover:underline-offset-8 decoration-2 decoration-[var(--color-marketnera)] transition-all"
+            >
               MARKETNERA
             </a>
           </h2>
@@ -128,7 +133,7 @@ export default function StudentLoginPage() {
             href="https://vicinix.co.in"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block text-xs font-bold tracking-[0.2em] text-[var(--color-vicinix)] opacity-85 hover:opacity-100 hover:scale-[1.02] transition-all uppercase"
+            className="inline-block text-xs font-bold tracking-[0.2em] text-[var(--color-vicinix)] opacity-85 hover:opacity-100 hover:underline hover:underline-offset-4 decoration-1 decoration-[var(--color-vicinix)] hover:scale-[1.02] transition-all uppercase"
           >
             Built by Vicinix
           </a>
