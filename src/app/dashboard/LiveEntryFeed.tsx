@@ -135,28 +135,33 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
       {/* Subtle corner glow */}
       <div className="absolute -top-20 -right-20 w-40 h-40 bg-[var(--color-marketnera)]/5 blur-[50px] rounded-full pointer-events-none"></div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-[var(--color-border)] mb-4 sticky top-0 bg-[var(--color-surface)] z-10 select-none">
-        <button
-          onClick={() => setActiveTab('feed')}
-          className={`flex-1 pb-3 text-xs font-bold uppercase tracking-widest text-center border-b-2 transition-all duration-200 ${
-            activeTab === 'feed'
-              ? 'border-[var(--color-marketnera)] text-[var(--color-text)]'
-              : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
-          }`}
-        >
-          Live Feed
-        </button>
-        <button
-          onClick={() => setActiveTab('left')}
-          className={`flex-1 pb-3 text-xs font-bold uppercase tracking-widest text-center border-b-2 transition-all duration-200 ${
-            activeTab === 'left'
-              ? 'border-[var(--color-marketnera)] text-[var(--color-text)]'
-              : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]'
-          }`}
-        >
-          Left Students ({leftStudents.length})
-        </button>
+      {/* Header with Title and Toggle Tabs */}
+      <div className="flex justify-between items-center pb-3 border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-surface)] z-10 select-none mb-4 flex-shrink-0">
+        <h3 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-widest">
+          Live Entry Feed
+        </h3>
+        <div className="flex bg-[#0A0F0D] p-0.5 rounded-lg border border-[var(--color-border)]">
+          <button
+            onClick={() => setActiveTab('feed')}
+            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
+              activeTab === 'feed'
+                ? 'bg-[var(--color-marketnera)] text-black font-extrabold'
+                : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+            }`}
+          >
+            Feed
+          </button>
+          <button
+            onClick={() => setActiveTab('left')}
+            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
+              activeTab === 'left'
+                ? 'bg-[var(--color-marketnera)] text-black font-extrabold'
+                : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
+            }`}
+          >
+            Left ({leftStudents.length})
+          </button>
+        </div>
       </div>
 
       {/* Search Input for Left Students */}
