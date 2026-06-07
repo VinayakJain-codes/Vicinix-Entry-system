@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Scanner } from '@yudiel/react-qr-scanner'
 import { createClient } from '@/utils/supabase/client'
 import { CheckCircle2, XCircle, RefreshCw, Zap } from 'lucide-react'
+import { getGuardScanCount } from './actions'
 
 type ScanResult = {
   status: 'idle' | 'scanning' | 'success' | 'invalid' | 'duplicate' | 'master'
@@ -20,14 +21,18 @@ export default function ScanPage() {
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndScans = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user?.email) {
         setGuardEmail(user.email)
       }
+
+      // Load persistent scan count from the database
+      const { count } = await getGuardScanCount()
+      setSessionScans(count)
     }
-    fetchUser()
+    fetchUserAndScans()
   }, [])
 
   // Haptics and Sounds
@@ -142,7 +147,7 @@ export default function ScanPage() {
             </button>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-[10px] uppercase tracking-widest text-[#4B6358] font-bold">Session Scans</span>
+            <span className="text-[10px] uppercase tracking-widest text-[#4B6358] font-bold">Total Scans</span>
             <span className="text-3xl font-black text-[#E8F5F0] font-mono">{sessionScans}</span>
           </div>
         </div>
