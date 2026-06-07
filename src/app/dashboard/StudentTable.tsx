@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { getStudents, updateStudent, resendStudentQR, deleteStudent, deleteMultipleStudents } from './actions'
 import { Tables } from '@/types/database.types'
-import { QrCode, Search, Download, X, Edit2, Loader2, Send, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { QrCode, Search, Download, X, Edit2, Loader2, Send, Trash2, AlertTriangle, CheckCircle2, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 type Student = Tables<'students'>
@@ -269,10 +269,10 @@ export default function StudentTable({ eventId }: { eventId: string }) {
 
   return (
     <div className="bg-[var(--color-surface)] p-6 rounded-2xl shadow-sm border border-[var(--color-border)] h-[600px] flex flex-col relative">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
         <h3 className="text-lg font-bold text-[var(--color-text)] uppercase tracking-widest">Student Roster</h3>
         
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)]" />
             <input 
@@ -284,24 +284,30 @@ export default function StudentTable({ eventId }: { eventId: string }) {
             />
           </div>
           
-          <select 
-            value={statusFilter} 
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-3 py-2 border border-[var(--color-border)] rounded-xl bg-[#0A0F0D] text-sm focus:outline-none focus:border-[var(--color-marketnera)] text-[var(--color-text)] transition-colors appearance-none"
-          >
-            <option value="all">All Status</option>
-            <option value="entered">Entered</option>
-            <option value="pending">Pending</option>
-          </select>
+          <div className="relative">
+            <select 
+              value={statusFilter} 
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="pl-3 pr-8 py-2 border border-[var(--color-border)] rounded-xl bg-[#0A0F0D] text-sm focus:outline-none focus:border-[var(--color-marketnera)] text-[var(--color-text)] transition-colors appearance-none cursor-pointer"
+            >
+              <option value="all">All Status</option>
+              <option value="entered">Entered</option>
+              <option value="pending">Pending</option>
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] pointer-events-none" />
+          </div>
 
-          <select 
-            value={sortBy} 
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-3 py-2 border border-[var(--color-border)] rounded-xl bg-[#0A0F0D] text-sm focus:outline-none focus:border-[var(--color-marketnera)] text-[var(--color-text)] transition-colors appearance-none"
-          >
-            <option value="name">Sort by Name</option>
-            <option value="uploaded">Sort by Upload Order</option>
-          </select>
+          <div className="relative">
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="pl-3 pr-8 py-2 border border-[var(--color-border)] rounded-xl bg-[#0A0F0D] text-sm focus:outline-none focus:border-[var(--color-marketnera)] text-[var(--color-text)] transition-colors appearance-none cursor-pointer"
+            >
+              <option value="name">Sort by Name</option>
+              <option value="uploaded">Sort by Upload Order</option>
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] pointer-events-none" />
+          </div>
 
           {duplicateStudentsList.length > 0 && (
             <>
