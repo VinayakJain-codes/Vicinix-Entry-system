@@ -1,18 +1,19 @@
 'use client'
 
-import { BarChart3, Users, Upload, QrCode, MessageCircle, ShieldCheck, Calendar, LogOut } from 'lucide-react'
+import { BarChart3, Users, Upload, QrCode, MessageCircle, ShieldCheck, Calendar, LogOut, Radio } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 
 const navItems = [
-  { href: '/dashboard',          label: 'Overview',  icon: BarChart3 },
-  { href: '/dashboard/students', label: 'Students',  icon: Users },
-  { href: '/dashboard/import',   label: 'Import',    icon: Upload },
-  { href: '/dashboard/qr',       label: 'Generate',  icon: QrCode },
-  { href: '/dashboard/blast',    label: 'WA Blast',  icon: MessageCircle },
-  { href: '/dashboard/master',   label: 'Master QR', icon: ShieldCheck },
-  { href: '/dashboard/events',   label: 'Events',    icon: Calendar },
+  { href: '/dashboard',           label: 'Overview',  icon: BarChart3 },
+  { href: '/dashboard/live-feed',  label: 'Live Feed', icon: Radio },
+  { href: '/dashboard/students',  label: 'Students',  icon: Users },
+  { href: '/dashboard/import',    label: 'Import',    icon: Upload },
+  { href: '/dashboard/qr',        label: 'Generate',  icon: QrCode },
+  { href: '/dashboard/blast',     label: 'WA Blast',  icon: MessageCircle },
+  { href: '/dashboard/master',    label: 'Master QR', icon: ShieldCheck },
+  { href: '/dashboard/events',    label: 'Events',    icon: Calendar },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

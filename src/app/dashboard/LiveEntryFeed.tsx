@@ -3,17 +3,12 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Tables } from '@/types/database.types'
-import { Search } from 'lucide-react'
 
 type Student = Tables<'students'>
 
 export default function LiveEntryFeed({ eventId }: { eventId: string }) {
   const [entries, setEntries] = useState<Student[]>([])
-  const [leftStudents, setLeftStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
-  const [leftLoading, setLeftLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'feed' | 'left'>('feed')
-  const [leftSearch, setLeftSearch] = useState('')
 
   useEffect(() => {
     if (!eventId) return
@@ -36,25 +31,7 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
       setLoading(false)
     }
 
-    // Fetch initial left/pending students
-    const fetchLeftStudents = async () => {
-      const { data } = await supabase
-        .from('students')
-        .select('*')
-        .eq('event_id', eventId)
-        .is('scanned_at', null)
-        .order('name', { ascending: true })
-      
-      if (data) {
-        setLeftStudents(data as Student[])
-      }
-      setLeftLoading(false)
-    }
-
-    setLoading(true)
-    setLeftLoading(true)
     fetchRecentScans()
-    fetchLeftStudents()
 
     // Subscribe to realtime updates for this event
     const channel = supabase
@@ -62,52 +39,23 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'students',
           filter: `event_id=eq.${eventId}`,
         },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const student = payload.new as Student
-            if (student.scanned_at) {
-              setEntries((prev) => {
-                if (prev.some(s => s.id === student.id)) return prev
-                return [student, ...prev].slice(0, 50)
-              })
-            } else {
-              setLeftStudents((prev) => {
-                if (prev.some(s => s.id === student.id)) return prev
-                return [...prev, student].sort((a, b) => a.name.localeCompare(b.name))
-              })
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const student = payload.new as Student
-            if (student.scanned_at) {
-              // Add/update in entries (Live Entry Feed)
-              setEntries((prev) => {
-                if (prev.some((s) => s.id === student.id)) {
-                  return prev.map(s => s.id === student.id ? student : s)
-                }
-                return [student, ...prev].slice(0, 50)
-              })
-              // Remove from leftStudents
-              setLeftStudents((prev) => prev.filter(s => s.id !== student.id))
-            } else {
-              // Remove from entries
-              setEntries((prev) => prev.filter(s => s.id !== student.id))
-              // Add/update in leftStudents
-              setLeftStudents((prev) => {
-                if (prev.some((s) => s.id === student.id)) {
-                  return prev.map(s => s.id === student.id ? student : s)
-                }
-                return [...prev, student].sort((a, b) => a.name.localeCompare(b.name))
-              })
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const studentId = payload.old.id
-            setEntries((prev) => prev.filter(s => s.id !== studentId))
-            setLeftStudents((prev) => prev.filter(s => s.id !== studentId))
+          const newStudent = payload.new as Student
+          // If the student was just scanned (scanned_at is now set)
+          if (newStudent.scanned_at) {
+            setEntries((prev) => {
+              // Avoid duplicates if multiple updates happen
+              if (prev.some((s) => s.id === newStudent.id)) {
+                return prev.map(s => s.id === newStudent.id ? newStudent : s)
+              }
+              // Add to top of feed
+              return [newStudent, ...prev].slice(0, 50)
+            })
           }
         }
       )
@@ -120,134 +68,50 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
 
   if (!eventId) return null
 
-  // Filter left students based on search query
-  const filteredLeftStudents = leftStudents.filter((student) => {
-    const query = leftSearch.toLowerCase()
-    return (
-      student.name.toLowerCase().includes(query) ||
-      (student.roll_no && student.roll_no.toLowerCase().includes(query)) ||
-      (student.whatsapp_number && !student.whatsapp_number.startsWith('no-phone-') && student.whatsapp_number.includes(query))
-    )
-  })
-
   return (
     <div className="bg-[var(--color-surface)] p-6 rounded-2xl shadow-sm border border-[var(--color-border)] h-[600px] flex flex-col relative overflow-hidden">
       {/* Subtle corner glow */}
       <div className="absolute -top-20 -right-20 w-40 h-40 bg-[var(--color-marketnera)]/5 blur-[50px] rounded-full pointer-events-none"></div>
 
-      {/* Header with Title and Toggle Tabs */}
-      <div className="flex justify-between items-center pb-3 border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-surface)] z-10 select-none mb-4 flex-shrink-0">
-        <h3 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-widest">
-          Live Entry Feed
-        </h3>
-        <div className="flex bg-[#0A0F0D] p-0.5 rounded-lg border border-[var(--color-border)]">
-          <button
-            onClick={() => setActiveTab('feed')}
-            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
-              activeTab === 'feed'
-                ? 'bg-[var(--color-marketnera)] text-black font-extrabold'
-                : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
-            }`}
-          >
-            Feed
-          </button>
-          <button
-            onClick={() => setActiveTab('left')}
-            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
-              activeTab === 'left'
-                ? 'bg-[var(--color-marketnera)] text-black font-extrabold'
-                : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
-            }`}
-          >
-            Left ({leftStudents.length})
-          </button>
-        </div>
-      </div>
-
-      {/* Search Input for Left Students */}
-      {activeTab === 'left' && (
-        <div className="relative mb-4 flex-shrink-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)]" />
-          <input
-            type="text"
-            placeholder="Search remaining students..."
-            value={leftSearch}
-            onChange={(e) => setLeftSearch(e.target.value)}
-            className="pl-9 pr-3 py-2 w-full border border-[var(--color-border)] rounded-xl bg-[#0A0F0D] text-xs focus:outline-none focus:border-[var(--color-marketnera)] text-[var(--color-text)] placeholder-[var(--color-muted)] transition-colors"
-          />
-        </div>
-      )}
+      <h3 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-widest mb-4 sticky top-0 bg-[var(--color-surface)] py-2 border-b border-[var(--color-border)] z-10">
+        Live Entry Feed
+      </h3>
       
       <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-        {activeTab === 'feed' ? (
-          loading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="feed-item flex items-center gap-3 p-3 bg-[var(--color-surface-2)] rounded-xl border border-[var(--color-border)] animate-pulse">
-                <div className="w-9 h-9 rounded-full bg-[var(--color-border)]"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-[var(--color-border)] rounded w-32"></div>
-                  <div className="h-3 bg-[var(--color-border)] rounded w-24"></div>
-                </div>
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="feed-item flex items-center gap-3 p-3 bg-[var(--color-surface-2)] rounded-xl border border-[var(--color-border)] animate-pulse">
+              <div className="w-9 h-9 rounded-full bg-[var(--color-border)]"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-[var(--color-border)] rounded w-32"></div>
+                <div className="h-3 bg-[var(--color-border)] rounded w-24"></div>
               </div>
-            ))
-          ) : entries.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <p className="text-sm text-[var(--color-muted)] font-mono">WAITING FOR SCANS...</p>
             </div>
-          ) : (
-            entries.map((student) => (
-              <div key={student.id} className="feed-item flex items-center gap-3 p-3 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-marketnera)]/30 transition-all">
-                <div className="w-9 h-9 rounded-full bg-[var(--color-marketnera)]/20 border border-[var(--color-marketnera)]/40 flex items-center justify-center text-[var(--color-marketnera)] font-bold text-sm flex-shrink-0">
-                  {student.name[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[var(--color-text)] truncate">{student.name}</p>
-                  <p className="text-xs text-[var(--color-muted)] font-mono">
-                    {student.student_id || (!student.whatsapp_number || student.whatsapp_number.startsWith('no-phone-') ? '' : student.whatsapp_number)}
-                  </p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <span className="text-[10px] font-bold text-[var(--color-marketnera)] bg-[var(--color-marketnera)]/10 px-2 py-0.5 rounded-full uppercase tracking-wider">GRANTED</span>
-                  <p className="text-[10px] text-[var(--color-muted)] mt-1 font-mono">
-                    {student.scanned_at ? new Date(student.scanned_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
-                  </p>
-                </div>
-              </div>
-            ))
-          )
+          ))
+        ) : entries.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-sm text-[var(--color-muted)] font-mono">WAITING FOR SCANS...</p>
+          </div>
         ) : (
-          leftLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="feed-item flex items-center gap-3 p-3 bg-[var(--color-surface-2)] rounded-xl border border-[var(--color-border)] animate-pulse">
-                <div className="w-9 h-9 rounded-full bg-[var(--color-border)]"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-[var(--color-border)] rounded w-32"></div>
-                  <div className="h-3 bg-[var(--color-border)] rounded w-24"></div>
-                </div>
+          entries.map((student) => (
+            <div key={student.id} className="feed-item flex items-center gap-3 p-3 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-marketnera)]/30 transition-all">
+              <div className="w-9 h-9 rounded-full bg-[var(--color-marketnera)]/20 border border-[var(--color-marketnera)]/40 flex items-center justify-center text-[var(--color-marketnera)] font-bold text-sm flex-shrink-0">
+                {student.name[0].toUpperCase()}
               </div>
-            ))
-          ) : filteredLeftStudents.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <p className="text-sm text-[var(--color-muted)] font-mono">NO STUDENTS LEFT TO ENTER</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[var(--color-text)] truncate">{student.name}</p>
+                <p className="text-xs text-[var(--color-muted)] font-mono">
+                  {student.student_id || (!student.whatsapp_number || student.whatsapp_number.startsWith('no-phone-') ? '' : student.whatsapp_number)}
+                </p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <span className="text-[10px] font-bold text-[var(--color-marketnera)] bg-[var(--color-marketnera)]/10 px-2 py-0.5 rounded-full uppercase tracking-wider">GRANTED</span>
+                <p className="text-[10px] text-[var(--color-muted)] mt-1 font-mono">
+                  {student.scanned_at ? new Date(student.scanned_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                </p>
+              </div>
             </div>
-          ) : (
-            filteredLeftStudents.map((student) => (
-              <div key={student.id} className="feed-item flex items-center gap-3 p-3 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-marketnera)]/30 transition-all">
-                <div className="w-9 h-9 rounded-full bg-zinc-500/10 border border-zinc-500/20 flex items-center justify-center text-zinc-400 font-bold text-sm flex-shrink-0">
-                  {student.name[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[var(--color-text)] truncate">{student.name}</p>
-                  <p className="text-xs text-[var(--color-muted)] font-mono">
-                    {student.roll_no || student.student_id || (!student.whatsapp_number || student.whatsapp_number.startsWith('no-phone-') ? '' : student.whatsapp_number)}
-                  </p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">PENDING</span>
-                </div>
-              </div>
-            ))
-          )
+          ))
         )}
       </div>
     </div>
