@@ -113,17 +113,21 @@ export async function updateStudent(
     return { error: 'Unauthorized role' }
   }
 
-  let cleanedPhone = whatsappNumber.replace(/\D/g, '')
-  if (!cleanedPhone) {
-    return { error: 'Invalid WhatsApp number' }
+  let cleanedPhone: string | null = whatsappNumber ? whatsappNumber.replace(/\D/g, '') : ''
+  if (!cleanedPhone || whatsappNumber.startsWith('no-phone-')) {
+    if (whatsappNumber.startsWith('no-phone-')) {
+      cleanedPhone = whatsappNumber
+    } else {
+      cleanedPhone = null
+    }
+  } else {
+    // Automatically prepend '91' for standard 10-digit Indian numbers without country code
+    if (cleanedPhone.length === 10) {
+      cleanedPhone = '91' + cleanedPhone
+    }
   }
 
-  // Automatically prepend '91' for standard 10-digit Indian numbers without country code
-  if (cleanedPhone.length === 10) {
-    cleanedPhone = '91' + cleanedPhone
-  }
-
-  const { error } = await adminClient
+  const { data: updatedStudent, error } = await adminClient
     .from('students')
     .update({
       name: name.trim(),
@@ -131,13 +135,15 @@ export async function updateStudent(
       roll_no: rollNo ? rollNo.trim() : null
     })
     .eq('id', studentId)
+    .select()
+    .single()
 
-  if (error) {
+  if (error || !updatedStudent) {
     console.error('Error updating student:', error)
-    return { error: error.message }
+    return { error: error ? error.message : 'Failed to update student' }
   }
 
-  return { success: true }
+  return { success: true, student: updatedStudent }
 }
 
 export async function resendStudentQR(studentId: string) {
@@ -245,6 +251,10 @@ export async function resendStudentQR(studentId: string) {
   }
 
   // 4. Send WhatsApp message
+  if (!student.whatsapp_number || student.whatsapp_number.startsWith('no-phone-')) {
+    return { error: 'This student does not have a WhatsApp number registered.' }
+  }
+
   const waToken = process.env.WHATSAPP_TOKEN
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
   const templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'qr_entry_ticket'
@@ -298,4 +308,70 @@ export async function resendStudentQR(studentId: string) {
     return { error: `WhatsApp send error: ${e.message}` }
   }
 }
+
+export async function deleteStudent(studentId: string) {
+  const supabase = await createClient()
+
+  // 1. Verify user is admin
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const adminClient = getAdminClient()
+  const { data: roleData } = await adminClient
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!roleData || !['admin', 'super_admin'].includes(roleData.role)) {
+    return { error: 'Unauthorized role' }
+  }
+
+  // 2. Delete student
+  const { error } = await adminClient
+    .from('students')
+    .delete()
+    .eq('id', studentId)
+
+  if (error) {
+    console.error('Error deleting student:', error)
+    return { error: error.message }
+  }
+
+  return { success: true }
+}
+
+export async function deleteMultipleStudents(studentIds: string[]) {
+  const supabase = await createClient()
+
+  // 1. Verify user is admin
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const adminClient = getAdminClient()
+  const { data: roleData } = await adminClient
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!roleData || !['admin', 'super_admin'].includes(roleData.role)) {
+    return { error: 'Unauthorized role' }
+  }
+
+  // 2. Delete students
+  const { error } = await adminClient
+    .from('students')
+    .delete()
+    .in('id', studentIds)
+
+  if (error) {
+    console.error('Error deleting students:', error)
+    return { error: error.message }
+  }
+
+  return { success: true }
+}
+
+
 

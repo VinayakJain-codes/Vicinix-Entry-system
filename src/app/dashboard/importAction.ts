@@ -2,6 +2,7 @@
 
 import * as xlsx from 'xlsx'
 import { createClient } from '@/utils/supabase/server'
+import crypto from 'crypto'
 
 export async function importRoster(formData: FormData) {
   const file = formData.get('roster') as File
@@ -62,23 +63,28 @@ export async function importRoster(formData: FormData) {
     const name = row[nameIdx]
     let rawPhone = row[phoneIdx]
 
-    if (!name || !rawPhone) {
+    if (!name) {
       continue
     }
 
-    // Clean phone number (remove non-digits)
-    let phone = String(rawPhone).replace(/\D/g, '')
+    let phone = null
+    if (rawPhone) {
+      const cleaned = String(rawPhone).replace(/\D/g, '')
+      if (cleaned) {
+        let formatted = cleaned
+        // Automatically prepend '91' for standard 10-digit Indian numbers without country code
+        if (formatted.length === 10) {
+          formatted = '91' + formatted
+        }
 
-    // Automatically prepend '91' for standard 10-digit Indian numbers without country code
-    if (phone.length === 10) {
-      phone = '91' + phone
+        if (seenPhones.has(formatted)) {
+          skipped++
+          continue
+        }
+        seenPhones.add(formatted)
+        phone = formatted
+      }
     }
-
-    if (seenPhones.has(phone)) {
-      skipped++
-      continue
-    }
-    seenPhones.add(phone)
 
     const studentId = sidIdx >= 0 && row[sidIdx] ? String(row[sidIdx]).trim() : null
     const enrollmentNo = enrollIdx >= 0 && row[enrollIdx] ? String(row[enrollIdx]).trim() : null

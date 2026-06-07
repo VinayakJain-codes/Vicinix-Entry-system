@@ -58,6 +58,11 @@ export async function blastWhatsAppForEvent(eventId: string, batchSize: number =
       continue
     }
 
+    if (!student.whatsapp_number || student.whatsapp_number.startsWith('no-phone-')) {
+      results.push({ id: student.id, success: false })
+      continue
+    }
+
     // Small sequential delay to avoid spam flags and rate limits
     await delay(100)
 

@@ -140,7 +140,9 @@ export default function QRGenerationPage() {
                <img src={s.qr_url} alt="QR" className="w-full h-full object-contain" />
              </div>
              <div className="text-xs font-bold text-[var(--color-text)] truncate w-full text-center">{s.name}</div>
-             <div className="text-[10px] text-[var(--color-muted)] font-mono truncate w-full text-center">{s.roll_no || s.whatsapp_number}</div>
+             <div className="text-[10px] text-[var(--color-muted)] font-mono truncate w-full text-center">
+               {s.roll_no || (!s.whatsapp_number || s.whatsapp_number.startsWith('no-phone-') ? '-' : s.whatsapp_number)}
+             </div>
            </div>
          )) : (
            Array.from({ length: 5 }).map((_, i) => (

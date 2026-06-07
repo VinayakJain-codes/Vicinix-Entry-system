@@ -172,7 +172,9 @@ export default function ScanPage() {
             {scanResult.student && (
               <div className="space-y-1">
                 <p className="text-3xl font-bold">{scanResult.student.name}</p>
-                <p className="text-lg opacity-80 font-mono">{scanResult.student.whatsapp_number}</p>
+                {!scanResult.student.whatsapp_number || scanResult.student.whatsapp_number.startsWith('no-phone-') ? null : (
+                  <p className="text-lg opacity-80 font-mono">{scanResult.student.whatsapp_number}</p>
+                )}
                 {scanResult.student.roll_no && (
                   <p className="text-sm opacity-60 font-mono">Roll No: {scanResult.student.roll_no}</p>
                 )}

@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { getStudents, updateStudent, resendStudentQR } from './actions'
+import { getStudents, updateStudent, resendStudentQR, deleteStudent, deleteMultipleStudents } from './actions'
 import { Tables } from '@/types/database.types'
-import { QrCode, Search, Download, X, Edit2, Loader2, Send } from 'lucide-react'
+import { QrCode, Search, Download, X, Edit2, Loader2, Send, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 type Student = Tables<'students'>
@@ -19,6 +19,107 @@ export default function StudentTable({ eventId }: { eventId: string }) {
   const [saving, setSaving] = useState(false)
   const [resendingId, setResendingId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'name' | 'uploaded'>('name')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const handleDelete = async (student: Student) => {
+    if (!confirm(`Are you sure you want to delete ${student.name}? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeletingId(student.id)
+    try {
+      const res = await deleteStudent(student.id)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success(`Student ${student.name} deleted successfully`)
+        setStudents(prev => prev.filter(s => s.id !== student.id))
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete student')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const [isDuplicatesModalOpen, setIsDuplicatesModalOpen] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+
+  const handleDeleteMultiple = async (studentIds: string[]) => {
+    if (!confirm(`Are you sure you want to delete all ${studentIds.length} duplicate students? This action cannot be undone.`)) {
+      return
+    }
+
+    setIsBulkDeleting(true)
+    try {
+      const res = await deleteMultipleStudents(studentIds)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success(`Deleted ${studentIds.length} duplicate students successfully`)
+        setStudents(prev => prev.filter(s => !studentIds.includes(s.id)))
+        setIsDuplicatesModalOpen(false)
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete duplicates')
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
+  const handleDeleteDuplicatesKeepingOne = async () => {
+    // 1. Group duplicate students by normalized roll_no
+    const groups: { [key: string]: Student[] } = {}
+    duplicateStudentsList.forEach(s => {
+      if (s.roll_no) {
+        const roll = s.roll_no.trim().toLowerCase()
+        if (!groups[roll]) {
+          groups[roll] = []
+        }
+        groups[roll].push(s)
+      }
+    })
+
+    // 2. Identify which ones to delete (keep only one per group)
+    const toDeleteIds: string[] = []
+    Object.keys(groups).forEach(roll => {
+      const group = groups[roll]
+      // Sort by created_at ascending (oldest first) so we keep the first one
+      const sortedGroup = [...group].sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+        return dateA - dateB
+      })
+      // Keep the first one, and mark all others for deletion
+      const duplicatesToDelete = sortedGroup.slice(1).map(s => s.id)
+      toDeleteIds.push(...duplicatesToDelete)
+    })
+
+    if (toDeleteIds.length === 0) {
+      toast.error("No duplicates to resolve.")
+      return
+    }
+
+    if (!confirm(`Are you sure you want to resolve duplicates? This will delete ${toDeleteIds.length} redundant duplicate records and keep exactly 1 student record per roll number.`)) {
+      return
+    }
+
+    setIsBulkDeleting(true)
+    try {
+      const res = await deleteMultipleStudents(toDeleteIds)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success(`Resolved duplicates: deleted ${toDeleteIds.length} redundant records.`)
+        setStudents(prev => prev.filter(s => !toDeleteIds.includes(s.id)))
+        setIsDuplicatesModalOpen(false)
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to resolve duplicates')
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
 
   const handleResend = async (student: Student) => {
     if (resendingId) return
@@ -46,7 +147,7 @@ export default function StudentTable({ eventId }: { eventId: string }) {
     setEditModalStudent(student)
     setEditForm({
       name: student.name || '',
-      whatsapp_number: student.whatsapp_number || '',
+      whatsapp_number: !student.whatsapp_number || student.whatsapp_number.startsWith('no-phone-') ? '' : student.whatsapp_number,
       roll_no: student.roll_no || ''
     })
   }
@@ -69,17 +170,12 @@ export default function StudentTable({ eventId }: { eventId: string }) {
       } else {
         toast.success('Student details updated successfully')
         
-        // Update local state
-        setStudents(prev => prev.map(s => 
-          s.id === editModalStudent.id 
-            ? { 
-                ...s, 
-                name: editForm.name.trim(), 
-                whatsapp_number: editForm.whatsapp_number.replace(/\D/g, ''),
-                roll_no: editForm.roll_no ? editForm.roll_no.trim() : null
-              } 
-            : s
-        ))
+        // Update local state using returned student
+        if (res.student) {
+          setStudents(prev => prev.map(s => 
+            s.id === editModalStudent.id ? res.student : s
+          ))
+        }
         
         setEditModalStudent(null)
       }
@@ -102,12 +198,30 @@ export default function StudentTable({ eventId }: { eventId: string }) {
     fetchStudents()
   }, [eventId])
 
+  const duplicateRollNos = useMemo(() => {
+    const counts: { [key: string]: number } = {}
+    students.forEach(s => {
+      if (s.roll_no) {
+        const normalized = s.roll_no.trim().toLowerCase()
+        counts[normalized] = (counts[normalized] || 0) + 1
+      }
+    })
+    return new Set(
+      Object.keys(counts).filter(roll => counts[roll] > 1)
+    )
+  }, [students])
+
+  const duplicateStudentsList = useMemo(() => {
+    return students.filter(s => s.roll_no && duplicateRollNos.has(s.roll_no.trim().toLowerCase()))
+  }, [students, duplicateRollNos])
+
   const filteredStudents = useMemo(() => {
     const filtered = students.filter((s) => {
       const searchLower = search.toLowerCase()
+      const phoneString = s.whatsapp_number || ''
       const matchesSearch = 
         s.name.toLowerCase().includes(searchLower) || 
-        s.whatsapp_number.includes(searchLower) ||
+        (!phoneString.startsWith('no-phone-') && phoneString.includes(searchLower)) ||
         (s.roll_no && s.roll_no.toLowerCase().includes(searchLower))
       
       let matchesStatus = true
@@ -134,7 +248,7 @@ export default function StudentTable({ eventId }: { eventId: string }) {
     const headers = ['Name', 'Phone Number', 'Roll No', 'QR Status', 'Scanned At']
     const rows = filteredStudents.map(s => [
       `"${s.name.replace(/"/g, '""')}"`,
-      `"${s.whatsapp_number}"`,
+      `"${!s.whatsapp_number || s.whatsapp_number.startsWith('no-phone-') ? '' : s.whatsapp_number}"`,
       `"${s.roll_no || ''}"`,
       `"${s.qr_status || 'N/A'}"`,
       s.scanned_at ? `"${new Date(s.scanned_at).toLocaleString()}"` : '"Pending"'
@@ -189,6 +303,30 @@ export default function StudentTable({ eventId }: { eventId: string }) {
             <option value="uploaded">Sort by Upload Order</option>
           </select>
 
+          {duplicateStudentsList.length > 0 && (
+            <>
+              <button 
+                onClick={handleDeleteDuplicatesKeepingOne}
+                disabled={isBulkDeleting}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-black text-sm font-bold rounded-xl hover:bg-zinc-200 transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                {isBulkDeleting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin text-black" /> Resolving...</>
+                ) : (
+                  <><CheckCircle2 className="w-4 h-4 text-black" /> Resolve Duplicates (Keep 1)</>
+                )}
+              </button>
+
+              <button 
+                onClick={() => setIsDuplicatesModalOpen(true)}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold rounded-xl hover:bg-red-500/20 transition-all active:scale-[0.98]"
+              >
+                <AlertTriangle className="w-4 h-4 text-red-400" />
+                <span>Review ({duplicateStudentsList.length})</span>
+              </button>
+            </>
+          )}
+
           <button 
             onClick={handleExportCSV}
             disabled={filteredStudents.length === 0}
@@ -229,52 +367,82 @@ export default function StudentTable({ eventId }: { eventId: string }) {
                 </td>
               </tr>
             ) : (
-              filteredStudents.map((s) => (
-                <tr key={s.id} className="hover:bg-[var(--color-surface-2)] transition-colors group">
-                  <td className="px-6 py-4 font-semibold">{s.name}</td>
-                  <td className="px-6 py-4 font-mono text-xs text-[var(--color-muted)]">{s.whatsapp_number}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${s.qr_status === 'sent' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
-                      {s.qr_status || 'generated'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {s.scanned_at ? (
-                      <span className="text-[var(--color-marketnera)] font-bold text-xs uppercase tracking-wider">Granted</span>
-                    ) : (
-                      <span className="text-[var(--color-muted)] font-medium text-xs uppercase tracking-wider">Pending</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right flex justify-end gap-2">
-                    <button 
-                      onClick={() => handleResend(s)}
-                      disabled={resendingId !== null}
-                      className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                      title="Resend QR Code"
-                    >
-                      {resendingId === s.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-[var(--color-marketnera)]" />
+              filteredStudents.map((s) => {
+                const isDuplicateRoll = s.roll_no && duplicateRollNos.has(s.roll_no.trim().toLowerCase())
+                return (
+                  <tr key={s.id} className="hover:bg-[var(--color-surface-2)] transition-colors group">
+                    <td className="px-6 py-4 font-semibold">
+                      <div className="flex items-center gap-2">
+                        <span>{s.name}</span>
+                        {isDuplicateRoll && (
+                          <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 text-[9px] font-bold uppercase tracking-wider">
+                            Duplicate Roll
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs text-[var(--color-muted)]">
+                      {!s.whatsapp_number || s.whatsapp_number.startsWith('no-phone-') ? '-' : s.whatsapp_number}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${s.qr_status === 'sent' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                        {s.qr_status || 'generated'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {s.scanned_at ? (
+                        <span className="text-[var(--color-marketnera)] font-bold text-xs uppercase tracking-wider">Granted</span>
                       ) : (
-                        <Send className="w-4 h-4" />
+                        <span className="text-[var(--color-muted)] font-medium text-xs uppercase tracking-wider">Pending</span>
                       )}
-                    </button>
-                    <button 
-                      onClick={() => handleEditClick(s)}
-                      className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100"
-                      title="Edit Student"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => setQrModalStudent(s)}
-                      className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100"
-                      title="View QR Code"
-                    >
-                      <QrCode className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                      <button 
+                        onClick={() => handleResend(s)}
+                        disabled={resendingId !== null}
+                        className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Resend QR Code"
+                      >
+                        {resendingId === s.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-[var(--color-marketnera)]" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => handleEditClick(s)}
+                        className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100"
+                        title="Edit Student"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => setQrModalStudent(s)}
+                        className="p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-marketnera)] hover:border-[var(--color-marketnera)]/50 transition-all opacity-50 group-hover:opacity-100"
+                        title="View QR Code"
+                      >
+                        <QrCode className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(s)}
+                        disabled={deletingId !== null}
+                        className={`p-2 rounded-lg bg-[var(--color-surface)] border transition-all ${
+                          isDuplicateRoll 
+                            ? 'border-red-500/30 text-red-500 hover:text-red-400 hover:border-red-500/50 opacity-100' 
+                            : 'border-[var(--color-border)] text-[var(--color-muted)] hover:text-red-400 hover:border-red-500/30 opacity-50 group-hover:opacity-100'
+                        }`}
+                        title={isDuplicateRoll ? "Delete Duplicate Student" : "Delete Student"}
+                      >
+                        {deletingId === s.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })
             )}
           </tbody>
         </table>
@@ -291,7 +459,9 @@ export default function StudentTable({ eventId }: { eventId: string }) {
               <X className="w-5 h-5" />
             </button>
             <h3 className="text-xl font-bold text-center mb-1">{qrModalStudent.name}</h3>
-            <p className="text-sm font-mono text-center text-[var(--color-muted)] mb-6">{qrModalStudent.whatsapp_number}</p>
+            <p className="text-sm font-mono text-center text-[var(--color-muted)] mb-6">
+              {!qrModalStudent.whatsapp_number || qrModalStudent.whatsapp_number.startsWith('no-phone-') ? 'No Phone Registered' : qrModalStudent.whatsapp_number}
+            </p>
             
             <div className="bg-white p-4 rounded-xl mx-auto w-48 h-48 flex items-center justify-center mb-6 overflow-hidden">
               {qrModalStudent.qr_url ? (
@@ -338,12 +508,11 @@ export default function StudentTable({ eventId }: { eventId: string }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">WhatsApp Number</label>
+                <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">WhatsApp Number (Optional)</label>
                 <input 
                   type="text" 
                   value={editForm.whatsapp_number}
                   onChange={(e) => setEditForm(prev => ({ ...prev, whatsapp_number: e.target.value }))}
-                  required
                   className="w-full bg-[#0A0F0D] border border-[var(--color-border)] rounded-xl px-4 py-3 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-marketnera)] transition-colors"
                 />
               </div>
@@ -379,6 +548,108 @@ export default function StudentTable({ eventId }: { eventId: string }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Review Duplicates Modal */}
+      {isDuplicatesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 w-full max-w-2xl shadow-[0_0_50px_rgba(239,68,68,0.1)] relative flex flex-col max-h-[85vh]">
+            <button 
+              onClick={() => setIsDuplicatesModalOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-[var(--color-surface-2)] hover:text-white transition-colors text-[var(--color-muted)]"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold uppercase tracking-widest text-[var(--color-text)]">Review Duplicate Records</h3>
+                <p className="text-xs text-[var(--color-muted)] mt-1">The following students share a duplicate Roll Number in this event.</p>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar border border-[var(--color-border)] rounded-2xl mb-6 bg-[#0A0F0D]">
+              <table className="w-full text-left text-[11px] whitespace-nowrap">
+                <thead className="bg-[#0A0F0D] text-[var(--color-muted)] uppercase tracking-widest text-[9px] border-b border-[var(--color-border)] sticky top-0">
+                  <tr>
+                    <th className="px-3 py-1.5 font-bold">Roll No</th>
+                    <th className="px-3 py-1.5 font-bold">Name</th>
+                    <th className="px-3 py-1.5 font-bold">Phone</th>
+                    <th className="px-3 py-1.5 font-bold text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-border)]">
+                  {duplicateStudentsList.map((s) => (
+                    <tr key={s.id} className="hover:bg-[var(--color-surface-2)] text-[var(--color-text)]">
+                      <td className="px-3 py-1 font-mono text-red-400 font-bold">{s.roll_no}</td>
+                      <td className="px-3 py-1 font-semibold">{s.name}</td>
+                      <td className="px-3 py-1 font-mono text-[var(--color-muted)]">
+                        {!s.whatsapp_number || s.whatsapp_number.startsWith('no-phone-') ? '-' : s.whatsapp_number}
+                      </td>
+                      <td className="px-3 py-1 text-right">
+                        <button
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete ${s.name}?`)) {
+                              deleteStudent(s.id).then((res) => {
+                                if (res.error) {
+                                  toast.error(res.error)
+                                } else {
+                                  toast.success(`Deleted ${s.name}`)
+                                  setStudents(prev => prev.filter(p => p.id !== s.id))
+                                }
+                              })
+                            }
+                          }}
+                          className="text-red-500 hover:text-red-400 font-bold"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-[var(--color-border)] w-full">
+              <button
+                onClick={() => setIsDuplicatesModalOpen(false)}
+                className="w-full sm:w-auto px-5 py-3 bg-[var(--color-surface-2)] border border-[var(--color-border)] text-white font-bold rounded-xl hover:bg-[var(--color-border)] transition-colors text-sm"
+              >
+                Close
+              </button>
+              
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <button
+                  onClick={handleDeleteDuplicatesKeepingOne}
+                  disabled={isBulkDeleting || duplicateStudentsList.length === 0}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-colors disabled:opacity-50 text-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                >
+                  {isBulkDeleting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Resolving...</>
+                  ) : (
+                    <><CheckCircle2 className="w-4 h-4" /> Keep Only 1 Per Roll No</>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleDeleteMultiple(duplicateStudentsList.map(s => s.id))}
+                  disabled={isBulkDeleting || duplicateStudentsList.length === 0}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 text-sm shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                >
+                  {isBulkDeleting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</>
+                  ) : (
+                    <><Trash2 className="w-4 h-4" /> Delete All Records</>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

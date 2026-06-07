@@ -78,8 +78,8 @@ export default function ImportPage() {
   }
 
   const handleMappingNext = () => {
-    if (!mapping.name || !mapping.whatsapp_number) {
-      toast.error('Name and Phone Number mappings are required')
+    if (!mapping.name) {
+      toast.error('Student Name mapping is required')
       return
     }
     setStep('preview')
@@ -94,14 +94,14 @@ export default function ImportPage() {
     setIsSubmitting(true)
     
     const nameIdx = headers.indexOf(mapping.name)
-    const phoneIdx = headers.indexOf(mapping.whatsapp_number)
+    const phoneIdx = mapping.whatsapp_number ? headers.indexOf(mapping.whatsapp_number) : -1
     const enrollIdx = headers.indexOf(mapping.roll_no)
 
     const mappedStudents = fileData.map(row => ({
       name: row[nameIdx],
-      whatsapp_number: row[phoneIdx],
+      whatsapp_number: phoneIdx >= 0 ? row[phoneIdx] : null,
       roll_no: enrollIdx >= 0 ? row[enrollIdx] : null,
-    })).filter(s => s.name && s.whatsapp_number)
+    })).filter(s => s.name)
 
     const res = await submitMappedRoster(selectedEventId, mappedStudents)
     
@@ -183,7 +183,7 @@ export default function ImportPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
                 { key: 'name', label: 'Student Name *' },
-                { key: 'whatsapp_number', label: 'WhatsApp Number *' },
+                { key: 'whatsapp_number', label: 'WhatsApp Number' },
                 { key: 'roll_no', label: 'Roll Number' },
               ].map(field => (
                 <div key={field.key}>
@@ -234,7 +234,11 @@ export default function ImportPage() {
                   {fileData.slice(0, 5).map((row, i) => (
                     <tr key={i} className="hover:bg-[var(--color-surface-2)] text-[var(--color-text)]">
                       <td className="px-6 py-4 font-bold">{row[headers.indexOf(mapping.name)] || '-'}</td>
-                      <td className="px-6 py-4 font-mono text-xs">{row[headers.indexOf(mapping.whatsapp_number)] || '-'}</td>
+                      <td className="px-6 py-4 font-mono text-xs">
+                        {mapping.whatsapp_number && headers.indexOf(mapping.whatsapp_number) >= 0
+                          ? row[headers.indexOf(mapping.whatsapp_number)] || '-'
+                          : '-'}
+                      </td>
                       <td className="px-6 py-4 font-mono text-xs">{mapping.roll_no ? row[headers.indexOf(mapping.roll_no)] || '-' : '-'}</td>
                     </tr>
                   ))}

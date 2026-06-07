@@ -100,7 +100,9 @@ export default function LiveEntryFeed({ eventId }: { eventId: string }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-[var(--color-text)] truncate">{student.name}</p>
-                <p className="text-xs text-[var(--color-muted)] font-mono">{student.student_id || student.whatsapp_number}</p>
+                <p className="text-xs text-[var(--color-muted)] font-mono">
+                  {student.student_id || (!student.whatsapp_number || student.whatsapp_number.startsWith('no-phone-') ? '' : student.whatsapp_number)}
+                </p>
               </div>
               <div className="text-right flex-shrink-0">
                 <span className="text-[10px] font-bold text-[var(--color-marketnera)] bg-[var(--color-marketnera)]/10 px-2 py-0.5 rounded-full uppercase tracking-wider">GRANTED</span>

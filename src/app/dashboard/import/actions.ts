@@ -2,6 +2,7 @@
 
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import crypto from 'crypto'
 
 const getAdminClient = () => createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,22 +37,30 @@ export async function submitMappedRoster(eventId: string, students: any[]) {
     .select('whatsapp_number')
     .eq('event_id', eventId)
 
-  const existingPhones = new Set((existingStudents || []).map(s => s.whatsapp_number))
+  const existingPhones = new Set(
+    (existingStudents || [])
+      .map(s => s.whatsapp_number)
+      .filter(phone => phone && !phone.startsWith('no-phone-'))
+  )
 
   const studentsToInsert = []
   let skipped = 0
 
   for (const row of students) {
     const rawPhone = row.whatsapp_number
-    if (!rawPhone) continue
+    let phone = null
 
-    const phone = String(rawPhone).replace(/\D/g, '')
-
-    if (existingPhones.has(phone)) {
-      skipped++
-      continue
+    if (rawPhone) {
+      const cleaned = String(rawPhone).replace(/\D/g, '')
+      if (cleaned) {
+        if (existingPhones.has(cleaned)) {
+          skipped++
+          continue
+        }
+        existingPhones.add(cleaned)
+        phone = cleaned
+      }
     }
-    existingPhones.add(phone)
 
     studentsToInsert.push({
       event_id: eventId,
