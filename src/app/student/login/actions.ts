@@ -11,7 +11,7 @@ const getAdminClient = () => createAdminClient(
 
 export async function studentLogin(rollNo: string) {
   if (!rollNo) {
-    return { error: 'Please enter your enrollment number' }
+    return { error: 'Please enter your roll number' }
   }
 
   const trimmedRollNo = rollNo.trim()
@@ -31,7 +31,7 @@ export async function studentLogin(rollNo: string) {
     }
 
     if (!students || students.length === 0) {
-      return { error: 'Invalid enrollment number' }
+      return { error: 'Invalid roll number' }
     }
 
     // Verify the first matching student record

@@ -184,7 +184,7 @@ export default function ImportPage() {
               {[
                 { key: 'name', label: 'Student Name *' },
                 { key: 'whatsapp_number', label: 'WhatsApp Number *' },
-                { key: 'roll_no', label: 'Enrollment Number' },
+                { key: 'roll_no', label: 'Roll Number' },
               ].map(field => (
                 <div key={field.key}>
                   <label className="block text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">{field.label}</label>
@@ -227,7 +227,7 @@ export default function ImportPage() {
                   <tr>
                     <th className="px-6 py-4 font-bold">Name</th>
                     <th className="px-6 py-4 font-bold">Phone</th>
-                    <th className="px-6 py-4 font-bold">Enrollment</th>
+                    <th className="px-6 py-4 font-bold">Roll No</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)]">

@@ -102,7 +102,7 @@ export default async function StudentDashboardPage() {
             Welcome back, <span className="text-[var(--color-text)] font-bold">{studentName}</span>. Your registered event passes are shown below.
           </p>
           <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono bg-white/5 border border-white/10 text-[var(--color-muted)]">
-            Enrollment: <span className="text-[var(--color-text)] ml-1 font-bold">{rollNo.toUpperCase()}</span>
+            Roll Number: <span className="text-[var(--color-text)] ml-1 font-bold">{rollNo.toUpperCase()}</span>
           </div>
         </div>
 
@@ -111,7 +111,7 @@ export default async function StudentDashboardPage() {
             <AlertCircle className="w-12 h-12 text-[var(--color-vicinix)] mx-auto mb-4" />
             <h3 className="text-lg font-bold text-[var(--color-text)]">No Events Registered</h3>
             <p className="text-xs text-[var(--color-muted)] mt-2 max-w-xs mx-auto leading-relaxed">
-              We couldn't find any registered events matching your enrollment number. If you think this is a mistake, please reach out to the event organizers.
+              We couldn't find any registered events matching your roll number. If you think this is a mistake, please reach out to the event organizers.
             </p>
           </div>
         ) : (

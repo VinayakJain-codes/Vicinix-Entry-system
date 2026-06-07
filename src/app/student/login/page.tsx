@@ -20,7 +20,7 @@ export default function StudentLoginPage() {
     const rollNo = formData.get('rollNo') as string
 
     if (!rollNo) {
-      setError('Please enter your enrollment number')
+      setError('Please enter your roll number')
       setLoading(false)
       return
     }
@@ -92,7 +92,7 @@ export default function StudentLoginPage() {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="rollNo" className="block text-sm font-semibold text-[var(--color-text)]">
-                Enrollment Number
+                Roll Number
               </label>
               <div className="mt-2">
                 <input

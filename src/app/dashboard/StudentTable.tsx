@@ -131,7 +131,7 @@ export default function StudentTable({ eventId }: { eventId: string }) {
   const handleExportCSV = () => {
     if (filteredStudents.length === 0) return
 
-    const headers = ['Name', 'Phone Number', 'Enrollment No', 'QR Status', 'Scanned At']
+    const headers = ['Name', 'Phone Number', 'Roll No', 'QR Status', 'Scanned At']
     const rows = filteredStudents.map(s => [
       `"${s.name.replace(/"/g, '""')}"`,
       `"${s.whatsapp_number}"`,
@@ -349,7 +349,7 @@ export default function StudentTable({ eventId }: { eventId: string }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Enrollment No (Roll No)</label>
+                <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Roll Number</label>
                 <input 
                   type="text" 
                   value={editForm.roll_no}
